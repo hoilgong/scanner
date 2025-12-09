@@ -4,76 +4,115 @@
 <meta charset="UTF-8">
 <meta name="viewport"
   content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<title>상품 존 조회 (ZXing)</title>
+<title>상품 존 조회 — 고속 모드</title>
 
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <style>
-  html, body{margin:0;padding:0;}
-  body{padding:20px;font-family:Arial;}
-  #scanner{width:100%;max-width:380px;height:240px;margin:auto;border:2px solid #888;position:relative;}
+  html, body{height:100%;margin:0;padding:0;overflow:hidden;}
+  body{font-family:Arial;padding:18px;}
+  #scanner{width:100%;max-width:380px;height:240px;margin:auto;border:2px solid #888;border-radius:8px;position:relative;overflow:hidden;}
   video{width:100%;height:100%;object-fit:cover;}
-  .scan-line{position:absolute;top:50%;left:0;width:100%;height:2px;background:red;}
-  #zone{margin-top:20px;font-size:22px;font-weight:bold;}
+  .scan-line{position:absolute;top:50%;left:0;width:100%;height:2px;background:red;transform:translateY(-50%);opacity:0.85;}
+  #zone{margin-top:14px;font-size:20px;font-weight:600;}
+  #meta{margin-top:6px;color:#666;font-size:13px;}
+  #restartBtn{margin-top:14px;padding:10px 14px;font-size:16px;}
 </style>
 </head>
 <body>
 
-<h2>상품 존 조회 (ZXing)</h2>
+<h2>상품 존 조회 (고속)</h2>
 
 <div id="scanner">
   <div class="scan-line"></div>
   <video id="video" muted playsinline></video>
 </div>
 
-<div id="zone">데이터 불러오는 중...</div>
-
-<button id="restartBtn" style="margin-top:20px;">다음 스캔</button>
+<div id="zone">데이터 로딩 중...</div>
+<div id="meta">데이터 최신: --</div>
+<button id="restartBtn">다음 스캔</button>
 
 <script>
+/*
+  성능 최적화 전체본
+  - 페이지 로드 시 한 번만 전체 map 로드
+  - 15분 간격으로 자동 갱신
+  - 스캔 시 로컬 lookup -> 즉시 응답
+*/
+
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxZ8_Sg90rJC8IczpXmK0NTRDuI1QV6B5_h1AYN_gpnV750ZuDBZHker78bBZJoe1mj/exec";
 
-let skuMap = {};        // 전체 데이터 보관
+let skuMap = {};
+let codeReader = new ZXing.BrowserMultiFormatReader();
 let scanning = false;
-const codeReader = new ZXing.BrowserMultiFormatReader();
+const REFRESH_MS = 15 * 60 * 1000; // 15분
 
-// ① 페이지 처음 켜질 때 전체 MAP 받아오기
-fetch(GAS_URL + "?type=all")
-  .then(r=>r.json())
-  .then(data=>{
-     skuMap = data;
-     document.getElementById("zone").innerText="스캔 해주세요";
-     startScanner(); // 여기서 스캐너 시작!!
-  });
+// 유틸: 전체 맵 로드
+async function loadAllMap() {
+  try {
+    const res = await fetch(GAS_URL + "?type=all", { cache: "no-store" });
+    if (!res.ok) throw new Error("map fetch failed");
+    const data = await res.json();
+    skuMap = data || {};
+    document.getElementById("zone").innerText = "스캔 준비 완료 — 바코드를 대세요";
+    document.getElementById("meta").innerText = "데이터 최신: " + new Date().toLocaleString();
+    console.log("skuMap loaded. entries:", Object.keys(skuMap).length);
+  } catch (err) {
+    console.error("Failed to load map:", err);
+    document.getElementById("zone").innerText = "데이터 로드 실패: " + err.message;
+  }
+}
 
-// ② 스캔 시작
+// 스캐너 시작 (decodeFromConstraints 이용)
 async function startScanner(){
+  if (scanning) return;
   scanning = true;
   const video = document.getElementById("video");
 
-  await codeReader.decodeFromConstraints(
-    {video:{facingMode:"environment"}},
-    video,
-    (result,err)=>{
-      if(result && scanning){
-        scanning = false;
-        codeReader.reset();
-        const code = String(result.text).trim();
-        const zone = skuMap[code] || "미등록 코드";
-        document.getElementById("zone").innerText=`바코드: ${code} / 존: ${zone}`;
-        if(navigator.vibrate) navigator.vibrate(200);
-      }
-    },
-    {tryHarder:true}
-  );
+  try {
+    await codeReader.decodeFromConstraints(
+      { video: { facingMode: "environment" } },
+      video,
+      (result, err) => {
+        if (result && scanning) {
+          scanning = false;
+          codeReader.reset(); // 비디오 캡쳐 멈춤
+          const code = String(result.text).trim();
+          const zone = skuMap[code] || "미등록 코드";
+
+          document.getElementById("zone").innerText = `바코드: ${code}  /  존: ${zone}`;
+          if (navigator.vibrate) navigator.vibrate(200);
+        }
+      },
+      { tryHarder: true }
+    );
+  } catch (e) {
+    console.error("startScanner error:", e);
+    document.getElementById("zone").innerText = "스캔 실패: " + (e && e.message ? e.message : e);
+    scanning = false;
+  }
 }
 
-// ③ 다시 스캔 버튼
-document.getElementById("restartBtn").addEventListener("click", ()=>{
-  document.getElementById("zone").innerText="스캔 해주세요";
+// 스캐너 재시작 버튼
+document.getElementById("restartBtn").addEventListener("click", () => {
+  document.getElementById("zone").innerText = "스캔 준비 완료 — 바코드를 대세요";
+  // reset reader state and start again
+  codeReader.reset();
   startScanner();
 });
+
+// 초기화: 맵 로드 → 스캐너 시작
+(async function init(){
+  document.getElementById("zone").innerText = "데이터 로딩 중...";
+  await loadAllMap();
+  await startScanner();
+
+  // 15분마다 map 자동 갱신 (백그라운드). 사용자는 페이지 재시작 불필요.
+  setInterval(async () => {
+    console.log("Auto-refresh map...");
+    await loadAllMap();
+  }, REFRESH_MS);
+})();
 </script>
 
 </body>
