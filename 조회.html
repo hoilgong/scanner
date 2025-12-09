@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>상품 존 조회</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
@@ -54,6 +54,12 @@
     font-weight:bold;
   }
 
+  #restartBtn{
+    margin-top:20px;
+    padding:10px 15px;
+    font-size:18px;
+  }
+
   @media(max-width:600px){
     #scanner{
       height:200px;
@@ -61,6 +67,7 @@
     }
   }
 </style>
+
 </head>
 <body>
 
@@ -72,46 +79,50 @@
 
 <div id="zone">스캔 후 존이 표시됩니다</div>
 
+<button id="restartBtn">다음 스캔</button>
+
 <script>
 let skuMap = {};
 
-// ⭐ Apps Script URL 고정 적용
 fetch("https://script.google.com/macros/s/AKfycbxZ8_Sg90rJC8IczpXmK0NTRDuI1QV6B5_h1AYN_gpnV750ZuDBZHker78bBZJoe1mj/exec")
-.then(r => r.json())
-.then(d => skuMap = d);
+.then(r=>r.json())
+.then(d=>skuMap = d);
 
-Quagga.init({
-  inputStream:{
-    type:"LiveStream",
-    target:document.querySelector('#scanner'),
-    constraints:{
-      facingMode:"environment",
-      advanced:[{ zoom:1.0 }]
-    }
-  },
-  decoder:{
-    readers:[
-      "ean_13_reader",
-      "ean_reader",
-      "ean_8_reader",
-      "code_128_reader"
-    ]
-  },
-  locate:true,
-  patchSize:"medium",
-  debug:false
-}, err => {
-  if(err){
-    console.log(err);
-    return;
-  }
-  Quagga.start();
-});
+function startScanner(){
+  Quagga.init({
+    inputStream:{
+      type:"LiveStream",
+      target:document.querySelector('#scanner'),
+      constraints:{
+        facingMode:"environment",
+        advanced:[{zoom:1.0}]
+      }
+    },
+    decoder:{
+      // 🔥 EAN 전용 (네가 원하는 바코드 형식만)
+      readers:[
+        "ean_13_reader",
+        "ean_reader",
+        "ean_8_reader"
+      ]
+    },
+    locate:true,
+    patchSize:"medium",
+    debug:false
+  }, err=>{
+    if(err){console.log(err);return;}
+    Quagga.start();
+  });
+}
 
-Quagga.onDetected(res => {
+startScanner();
+
+// =========================
+// 1번 읽으면 STOP
+// =========================
+Quagga.onDetected(res=>{
   const code = res.codeResult.code;
 
-  // 1회 스캔 후 종료
   Quagga.stop();
 
   const zone = skuMap[code] || "미등록 코드";
@@ -122,6 +133,15 @@ Quagga.onDetected(res => {
     navigator.vibrate(200);
   }
 });
+
+// =========================
+// 다음 스캔
+// =========================
+document.getElementById("restartBtn").addEventListener("click", ()=>{
+  document.getElementById("zone").innerText = "스캔 후 존이 표시됩니다";
+  startScanner();
+});
+
 </script>
 
 </body>
