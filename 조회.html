@@ -7,7 +7,6 @@
 
 <title>상품 존 조회 (ZXing)</title>
 
-<!-- ZXing -->
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <style>
@@ -39,7 +38,7 @@
     object-fit:cover;
   }
 
-  /* 중앙 고정 레이저 라인 */
+  /* 중앙 고정 레드 라인 */
   .scan-line{
     position:absolute;
     top:50%;
@@ -91,41 +90,44 @@ fetch("https://script.google.com/macros/s/AKfycbxZ8_Sg90rJC8IczpXmK0NTRDuI1QV6B5
 .then(r=>r.json())
 .then(d=>skuMap = d);
 
-// ZXing Reader
-const codeReader = new ZXing.BrowserBarcodeReader();
-let selectedDeviceId;
+const codeReader = new ZXing.BrowserMultiFormatReader();
 let scanning = false;
 
+// ===== 스캔 시작 (decodeFromConstraints) =====
 async function startScanner(){
   scanning = true;
+  const video = document.getElementById("video");
 
-  const video = document.getElementById('video');
-  const devices = await codeReader.getVideoInputDevices();
-
-  // 후면카메라 선택 (가능하면)
-  const backCam = devices.find(d => /back|rear|환경/gi.test(d.label));
-  selectedDeviceId = backCam ? backCam.deviceId : devices[0].deviceId;
-
-  codeReader.decodeFromVideoDevice(selectedDeviceId, video, (result, err)=>{
-    if(result && scanning){
-      scanning = false;
-      codeReader.reset();
-
-      const code = result.text;
-
-      const zone = skuMap[code] || "미등록 코드";
-      document.getElementById("zone").innerText =
-        `바코드: ${code} / 존: ${zone}`;
-
-      if(navigator.vibrate){
-        navigator.vibrate(200);
+  await codeReader.decodeFromConstraints(
+    {
+      audio: false,
+      video: {
+        facingMode: "environment",
       }
-    }
-  });
+    },
+    video,
+    (result, err)=>{
+      if(result && scanning){
+        scanning = false;
+        codeReader.reset();
+
+        const code = result.text;
+        const zone = skuMap[code] || "미등록 코드";
+        document.getElementById("zone").innerText =
+          `바코드: ${code} / 존: ${zone}`;
+
+        if(navigator.vibrate){
+          navigator.vibrate(200);
+        }
+      }
+    },
+    { tryHarder: true }
+  );
 }
 
 startScanner();
 
+// ===== 다음 스캔 =====
 document.getElementById("restartBtn").addEventListener("click", ()=>{
   document.getElementById("zone").innerText = "스캔 후 존이 표시됩니다";
   startScanner();
