@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kurly Relocation</title>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --kurly-purple: #5f0080;
+    --kurly-orange: #ff6b00; /* 2단계 강조색 */
+    --bg-gray: #f4f4f4;
+    --text-black: #333;
+  }
+  * { box-sizing: border-box; }
+  body { 
+    height: 100vh; margin: 0; padding: 10px; overflow: hidden;
+    font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-gray);
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  /* 상단 헤더 */
+  .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
+  .status { font-size: 12px; background: white; padding: 4px 8px; border-radius: 10px; color: #666; }
+
+  /* 진행 단계 표시바 */
+  #step-bar {
+    width: 100%; max-width: 400px; display: flex; margin-bottom: 10px;
+    background: #ddd; border-radius: 20px; overflow: hidden;
+  }
+  .step { flex: 1; text-align: center; padding: 8px 0; font-size: 13px; font-weight: bold; color: #999; }
+  .step.active { background: var(--kurly-purple); color: white; }
+  .step.active-2 { background: var(--kurly-orange); color: white; }
+
+  /* 스캐너 */
+  #reader {
+    width: 100%; max-width: 400px; height: 220px;
+    background: black; border-radius: 8px; overflow: hidden; margin-bottom: 10px;
+    border: 4px solid var(--kurly-purple); /* 상태에 따라 색상 변경 */
+    transition: border-color 0.3s; position: relative;
+  }
+  #reader__scan_region { background: rgba(0,0,0,0.6) !important; }
+  #reader__dashboard_section_csr button { display: none !important; }
+  #reader video { object-fit: cover; }
+
+  /* 안내 문구 */
+  #guide-msg {
+    width: 100%; max-width: 400px; text-align: center;
+    font-size: 18px; font-weight: 800; margin-bottom: 10px;
+    color: var(--kurly-purple);
+  }
+
+  /* 상품 정보 카드 */
+  #info-card {
+    flex-grow: 1; width: 100%; max-width: 400px;
+    background: white; border-radius: 10px; padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex; flex-direction: column; justify-content: start;
+    overflow-y: auto;
+  }
+
+  .row { margin-bottom: 15px; }
+  .label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .val { font-size: 16px; font-weight: 600; color: #333; }
+  
+  /* 목표 지번 강조 */
+  .target-box { 
+    background: #fff4e6; padding: 15px; border-radius: 8px; 
+    border: 2px solid var(--kurly-orange); text-align: center;
+    display: none; /* 2단계에서 보임 */
+  }
+  .target-val { font-size: 32px; font-weight: 900; color: var(--kurly-orange); }
+
+  /* 수기 입력 */
+  #manual-box { width: 100%; max-width: 400px; display: flex; gap: 5px; margin-top: 10px; }
+  #manual-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; }
+  #manual-btn { background: #555; color: white; border: none; padding: 0 15px; border-radius: 6px; }
+
+  /* 성공/실패 오버레이 */
+  #overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200;
+    display: none; flex-direction: column; justify-content: center; align-items: center; color: white;
+  }
+  #overlay-icon { font-size: 60px; margin-bottom: 20px; }
+  #overlay-text { font-size: 24px; font-weight: bold; }
+
+  #loading {
+    position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 999;
+    display: flex; justify-content: center; align-items: center; flex-direction: column;
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <p style="color:#5f0080; font-weight:bold;">데이터 동기화 중...</p>
+</div>
+
+<div id="overlay">
+  <div id="overlay-icon">✅</div>
+  <div id="overlay-text">재적치 완료</div>
+</div>
+
+<div class="header">
+  <div class="logo">재적치 스캐너</div>
+  <div class="status" id="db-status">대기</div>
+</div>
+
+<div id="step-bar">
+  <div id="step1" class="step active">1. 상품 스캔</div>
+  <div id="step2" class="step">2. 지번 스캔</div>
+</div>
+
+<div id="guide-msg">상품 바코드를 스캔하세요</div>
+
+<div id="reader"></div>
+
+<div id="info-card">
+  <div class="row">
+    <div class="label">상품명</div>
+    <div class="val" id="p-name">-</div>
+  </div>
+  
+  <div id="target-area" class="target-box">
+    <div class="label" style="color:#d9480f">⬇️ 이 지번에 상품을 넣으세요</div>
+    <div class="target-val" id="p-jibun">-</div>
+  </div>
+</div>
+
+<div id="manual-box">
+  <input type="text" id="m-input" placeholder="바코드 직접 입력">
+  <button id="m-btn">확인</button>
+</div>
+
+<script>
+// ============================================================
+// 👇 배포 ID (기존과 동일)
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzANCvWhDrPk_4Blx7jkIVo4_dSnkHOKbTJ17fdmHtdi8GmTcKCJYuHlB8QfuRf-pqG/exec";
+// ============================================================
+
+let skuMap = {};
+let html5QrCode = null;
+let currentStep = 1; // 1: 상품스캔, 2: 지번스캔
+let currentProduct = null; // 현재 스캔한 상품 정보
+
+const els = {
+  step1: document.getElementById("step1"),
+  step2: document.getElementById("step2"),
+  reader: document.getElementById("reader"),
+  guide: document.getElementById("guide-msg"),
+  pName: document.getElementById("p-name"),
+  pJibun: document.getElementById("p-jibun"),
+  targetArea: document.getElementById("target-area"),
+  loading: document.getElementById("loading"),
+  overlay: document.getElementById("overlay"),
+  ovIcon: document.getElementById("overlay-icon"),
+  ovText: document.getElementById("overlay-text"),
+  mInput: document.getElementById("m-input"),
+  mBtn: document.getElementById("m-btn"),
+  dbStatus: document.getElementById("db-status")
+};
+
+// 1. 데이터 로드
+async function loadData() {
+  els.loading.style.display = 'flex';
+  try {
+    const res = await fetch(GAS_URL + "?t=" + Date.now());
+    const data = await res.json();
+    skuMap = data;
+    els.dbStatus.innerText = Object.keys(data).length + "개 로드";
+    els.loading.style.display = 'none';
+    startScanner();
+  } catch(e) {
+    alert("데이터 로드 실패");
+    els.loading.style.display = 'none';
+  }
+}
+
+// 2. 스캐너 시작
+async function startScanner() {
+  if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+  try {
+    await html5QrCode.start(
+      { facingMode: "environment" }, 
+      { fps: 10, qrbox: { width: 250, height: 150 } }, 
+      onScan
+    );
+  } catch(e) { console.error(e); }
+}
+
+// 3. 스캔 핸들러 (핵심 로직)
+function onScan(decodedText) {
+  // 중복 스캔 방지 (오버레이 떠있으면 무시)
+  if(els.overlay.style.display === 'flex') return;
+
+  const code = String(decodedText).trim();
+
+  if(currentStep === 1) {
+    handleProductScan(code);
+  } else {
+    handleLocationScan(code);
+  }
+}
+
+// [1단계] 상품 스캔 처리
+function handleProductScan(code) {
+  const item = skuMap[code];
+  
+  if(item) {
+    // 상품 찾음 -> 2단계로 이동
+    currentProduct = {
+      code: item[1],
+      name: item[0],
+      jibun: item[2], // 목표 지번
+      zone: item[3]
+    };
+
+    // UI 업데이트
+    els.pName.innerText = item[0];
+    els.pJibun.innerText = item[2];
+    
+    // 모드 전환
+    setStep(2);
+    playSound("success");
+
+  } else {
+    // 상품 없음
+    showOverlay("❌", "등록되지 않은 상품", "red", 1000);
+    playSound("error");
+  }
+}
+
+// [2단계] 지번 스캔 처리
+function handleLocationScan(scannedJibun) {
+  const targetJibun = currentProduct.jibun;
+
+  // 지번 일치 여부 확인 (공백제거 비교)
+  if(scannedJibun.replace(/\s/g, "") === targetJibun.replace(/\s/g, "")) {
+    // 일치 -> 성공 -> 저장
+    saveLog(scannedJibun);
+    showOverlay("✅", "재적치 완료!", "green", 1500);
+    playSound("success");
+    
+    // 잠시 후 1단계로 리셋
+    setTimeout(() => {
+      setStep(1);
+      clearInfo();
+    }, 1500);
+
+  } else {
+    // 불일치
+    showOverlay("⚠️", "지번 불일치!\n스캔: " + scannedJibun, "#ff6b00", 2000);
+    playSound("error");
+  }
+}
+
+// 데이터 저장 (서버 전송)
+function saveLog(scannedLoc) {
+  fetch(GAS_URL, {
+    method: "POST",
+    mode: "no-cors",
+    body: JSON.stringify({
+      prodCode: currentProduct.code,
+      prodName: currentProduct.name,
+      targetJibun: currentProduct.jibun,
+      scannedJibun: scannedLoc
+    })
+  });
+}
+
+// UI 상태 변경 함수
+function setStep(step) {
+  currentStep = step;
+  if(step === 1) {
+    els.step1.classList.add("active");
+    els.step2.classList.remove("active-2");
+    els.reader.style.borderColor = "#5f0080"; // 보라색
+    els.guide.innerText = "상품 바코드를 스캔하세요";
+    els.guide.style.color = "#5f0080";
+    els.targetArea.style.display = "none";
+  } else {
+    els.step1.classList.remove("active");
+    els.step2.classList.add("active-2");
+    els.reader.style.borderColor = "#ff6b00"; // 주황색
+    els.guide.innerText = "지번 바코드를 스캔하세요";
+    els.guide.style.color = "#ff6b00";
+    els.targetArea.style.display = "block";
+  }
+}
+
+function clearInfo() {
+  els.pName.innerText = "-";
+  els.pJibun.innerText = "-";
+  currentProduct = null;
+}
+
+// 오버레이 표시
+function showOverlay(icon, text, color, duration) {
+  els.ovIcon.innerText = icon;
+  els.ovText.innerText = text;
+  els.ovText.style.color = color;
+  els.overlay.style.display = 'flex';
+  
+  if(html5QrCode) html5QrCode.pause(); // 카메라 잠시 멈춤
+
+  setTimeout(() => {
+    els.overlay.style.display = 'none';
+    if(html5QrCode) html5QrCode.resume(); // 카메라 재개
+  }, duration);
+}
+
+// 수기 입력
+els.mBtn.addEventListener("click", () => {
+  const val = els.mInput.value.trim();
+  if(!val) return;
+  onScan(val);
+  els.mInput.value = "";
+});
+
+// 진동/소리 (브라우저 정책상 소리는 제한될 수 있음)
+function playSound(type) {
+  if(navigator.vibrate) {
+    if(type === "success") navigator.vibrate(100);
+    else navigator.vibrate([200, 100, 200]);
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
