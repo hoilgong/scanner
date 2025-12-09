@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kurly Scanner High-Res</title>
+<title>Kurly Scanner Safe</title>
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
@@ -50,7 +50,7 @@
   }
   
   /* 라이브러리 UI 정리 */
-  #reader__scan_region { background: rgba(0, 0, 0, 0.5) !important; }
+  #reader__scan_region { background: rgba(0, 0, 0, 0.6) !important; }
   #reader__dashboard_section_csr button { display: none !important; } 
   #reader video { object-fit: cover; }
 
@@ -113,8 +113,8 @@
 </div>
 
 <div id="reader">
-  <div style="position:absolute; bottom:10px; width:100%; text-align:center; color:rgba(255,255,255,0.8); font-size:12px; z-index:10; pointer-events:none;">
-    초록색 박스에 맞춰주세요
+  <div style="position:absolute; bottom:10px; width:100%; text-align:center; color:rgba(255,255,255,0.9); font-size:12px; z-index:10; pointer-events:none; font-weight:bold;">
+    박스 안에 바코드를 꽉 차게 맞춰주세요
   </div>
 </div>
 
@@ -183,7 +183,7 @@ async function fetchData(isBg) {
   }
 }
 
-// 2. 스캐너 시작 (초고화질 모드 적용)
+// 2. 스캐너 시작 (안전 모드)
 async function startScanner() {
   if(isScanning) return;
   els.btn.style.display = "none";
@@ -193,36 +193,30 @@ async function startScanner() {
     html5QrCode = new Html5Qrcode("reader");
   }
 
-  // 🔥 핵심: width와 height를 아주 크게 잡아서(4K급) 
-  // 카메라가 지원하는 '최대 해상도'를 끌어내도록 유도합니다.
-  const videoConstraints = {
-    facingMode: "environment",
-    width: { ideal: 3840 }, // 4K 해상도 요청
-    height: { ideal: 2160 },
-    focusMode: "continuous" // 연속 초점
-  };
-
+  // 🔥 수정: 해상도 강제 설정을 빼고, 박스를 작게 만들어서 정밀도 향상
+  // qrbox를 작게 잡으면, 사용자가 바코드를 가까이 대지 않아도
+  // 소프트웨어적으로 줌을 한 것 같은 효과(집중)를 줍니다.
   const config = { 
     fps: 10,
-    // 스캔 박스 크기: 너무 작으면 맞추기 힘드니 적당히 키움
-    qrbox: { width: 260, height: 180 }, 
+    qrbox: { width: 220, height: 120 }, // 박스 크기를 줄여서 집중력 UP
     aspectRatio: 1.0
   };
 
   try {
     isScanning = true;
     
-    // start 함수의 첫 번째 인자로 비디오 제약 조건을 직접 전달
+    // 단순하게 "후면 카메라"만 요청 -> 호환성 100%
     await html5QrCode.start(
-      videoConstraints, 
+      { facingMode: "environment" }, 
       config, 
       onScanSuccess, 
       onScanFailure
     );
   } catch (err) {
-    console.error("Camera failed", err);
+    console.error("Camera Error:", err);
     isScanning = false;
-    alert("카메라 권한을 확인해주세요.");
+    // 에러 내용을 사용자에게 보여줌 (디버깅용)
+    alert("카메라 오류: " + err.name + "\n(새로고침 해주세요)");
   }
 }
 
