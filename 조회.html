@@ -2,135 +2,220 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<title>상품 존 조회 (ZXing)</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>상품 존 조회 (실시간)</title>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
-
 <style>
-  html, body{
-    height:100%;
-    margin:0;
-    padding:0;
-    overflow:hidden;
-  }
-  body{
-    font-family:Arial;
-    padding:20px;
-    touch-action:none;
+  html, body{ height:100%; margin:0; padding:0; overflow:hidden; }
+  body{ 
+    font-family:'Apple SD Gothic Neo', 'Malgun Gothic', Arial, sans-serif; 
+    padding:15px; 
+    touch-action:none; 
+    display:flex; flex-direction:column; align-items:center; 
+    background-color: #f4f6f8;
   }
 
+  /* 상단 상태바 */
+  #status-card {
+    width: 100%; max-width: 400px;
+    background: white; padding: 10px; 
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px; font-size: 13px;
+  }
+  #data-time { color: #555; font-weight: bold; }
+  #refresh-icon { 
+    color: #007bff; cursor: pointer; padding: 5px; 
+    border: 1px solid #eee; border-radius: 4px;
+  }
+
+  /* 스캐너 영역 */
   #scanner{
-    width:100%;
-    max-width:380px;
-    height:240px;
-    margin:auto;
-    border:2px solid #888;
-    border-radius:8px;
-    overflow:hidden;
-    position:relative;
+    width:100%; max-width:400px; height:250px;
+    border:3px solid #333; border-radius:12px;
+    overflow:hidden; position:relative; background: #000;
   }
-  video{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-  }
+  video{ width:100%; height:100%; object-fit:cover; }
 
   .scan-line{
-    position:absolute;
-    top:50%;
-    left:0;
-    width:100%;
-    height:2px;
-    background:red;
-    opacity:0.85;
-    transform:translateY(-50%);
+    position:absolute; top:50%; left:0; width:100%; height:2px;
+    background:#00ff00; box-shadow: 0 0 4px #00ff00;
+    opacity:0.8; transform:translateY(-50%);
   }
 
-  #zone{
-    margin-top:20px;
-    font-size:22px;
-    font-weight:bold;
+  /* 결과 표시 영역 */
+  #result-box {
+    width: 100%; max-width: 400px;
+    margin-top: 15px; text-align: center;
+    background: white; padding: 20px 0;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    flex-grow: 1; display: flex; flex-direction: column; justify-content: center;
   }
-
+  #code-display { font-size: 14px; color: #888; margin-bottom: 5px;}
+  #zone { font-size: 40px; font-weight:900; color: #333; line-height: 1.2; }
+  
+  /* 재스캔 버튼 */
   #restartBtn{
-    margin-top:20px;
-    padding:10px 15px;
-    font-size:18px;
+    margin-top:15px; width: 80%; padding:15px; font-size:18px; font-weight: bold;
+    background: #28a745; color: white; border: none; border-radius: 50px;
+    cursor: pointer; box-shadow: 0 4px 6px rgba(40, 167, 69, 0.3);
+    display: none; /* 스캔 전 숨김 */
   }
+  
+  /* 로딩 오버레이 */
+  #loading-overlay {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(255,255,255,0.9); z-index: 999;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+  }
+  .spinner {
+    width: 40px; height: 40px; border: 4px solid #ddd; border-top: 4px solid #007bff;
+    border-radius: 50%; animation: spin 1s linear infinite;
+  }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-  @media(max-width:600px){
-    #scanner{
-      height:200px;
-      max-width:330px;
-    }
-  }
 </style>
 </head>
 <body>
 
-<h2>상품 존 조회 (ZXing)</h2>
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <p style="margin-top:15px; color:#555;">데이터 동기화 중...</p>
+</div>
+
+<div id="status-card">
+  <div>
+    <span style="color:#888;">데이터 기준:</span> 
+    <span id="data-time">로딩 중...</span>
+  </div>
+  <div id="refresh-icon" onclick="manualRefresh()">🔄 새로고침</div>
+</div>
 
 <div id="scanner">
   <div class="scan-line"></div>
   <video id="video" muted playsinline></video>
 </div>
 
-<div id="zone">스캔 후 존이 표시됩니다</div>
-
-<button id="restartBtn">다음 스캔</button>
+<div id="result-box">
+  <div id="code-display">바코드를 스캔하세요</div>
+  <div id="zone">-</div>
+  <center><button id="restartBtn">다음 스캔</button></center>
+</div>
 
 <script>
+// 배포한 GAS URL
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxZ8_Sg90rJC8IczpXmK0NTRDuI1QV6B5_h1AYN_gpnV750ZuDBZHker78bBZJoe1mj/exec";
 
-const codeReader = new ZXing.BrowserMultiFormatReader();
+let skuMap = {};
 let scanning = false;
+const codeReader = new ZXing.BrowserMultiFormatReader();
+const zoneEl = document.getElementById("zone");
+const codeEl = document.getElementById("code-display");
+const restartBtn = document.getElementById("restartBtn");
+const loadingEl = document.getElementById("loading-overlay");
+const timeEl = document.getElementById("data-time");
 
-// ===== 스캔 시작 =====
-async function startScanner(){
-  scanning = true;
-  const video = document.getElementById("video");
+// 1. 데이터 가져오기 (초기 로딩 & 주기적 갱신 공용)
+async function fetchData(isBackground = false) {
+  if(!isBackground) loadingEl.style.display = "flex"; // 초기 로딩엔 화면 가림
 
-  await codeReader.decodeFromConstraints(
-    {
-      audio: false,
-      video:{ facingMode:"environment" }
-    },
-    video,
-    (result,err)=>{
-      if(result && scanning){
-        scanning = false;
-        codeReader.reset();
+  try {
+    const timestamp = new Date().getTime(); // 캐시 방지용 파라미터 추가
+    const response = await fetch(GAS_URL + "?t=" + timestamp);
+    const data = await response.json();
+    
+    skuMap = data;
+    
+    // 시간 표시 업데이트
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2,'0') + ":" + 
+                    now.getMinutes().toString().padStart(2,'0');
+    timeEl.innerText = timeStr + " (" + Object.keys(data).length + "개)";
+    timeEl.style.color = "#28a745";
 
-        const code = String(result.text).trim();
-
-        // === 여기서 GAS 호출 (단일 조회)
-        fetch(GAS_URL + "?code=" + encodeURIComponent(code))
-          .then(r=>r.text())
-          .then(zone=>{
-            document.getElementById("zone").innerText =
-              `바코드: ${code} / 존: ${zone}`;
-
-            if(navigator.vibrate){
-              navigator.vibrate(200);
-            }
-          });
-      }
-    },
-    { tryHarder:true }
-  );
+    if(!isBackground) {
+      loadingEl.style.display = "none";
+      startScanner(); // 처음 로딩일 때만 스캐너 시작
+    } else {
+        console.log("백그라운드 데이터 갱신 완료: " + timeStr);
+    }
+  } catch (err) {
+    console.error(err);
+    if(!isBackground) {
+        alert("데이터 로드 실패. 인터넷을 확인하고 새로고침 해주세요.");
+    }
+  }
 }
 
-startScanner();
+// 2. 수동 새로고침 버튼
+function manualRefresh() {
+    if(confirm("데이터를 최신으로 업데이트 할까요?")) {
+        fetchData(false); // 로딩 화면 보여주며 갱신
+    }
+}
 
-// ===== 다음 스캔 =====
-document.getElementById("restartBtn").addEventListener("click", ()=>{
-  document.getElementById("zone").innerText = "스캔 후 존이 표시됩니다";
+// 3. 스캐너 로직
+async function startScanner(){
+  scanning = true;
+  restartBtn.style.display = "none";
+  zoneEl.innerText = "스캔 중...";
+  zoneEl.style.color = "#ccc";
+  codeEl.innerText = "";
+
+  try {
+    await codeReader.decodeFromConstraints(
+      { audio: false, video:{ facingMode:"environment" } },
+      "video",
+      (result, err) => {
+        if(result && scanning){
+          handleScan(result.text);
+        }
+      }
+    );
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// 4. 스캔 결과 처리 (로컬 조회)
+function handleScan(code) {
+  scanning = false;
+  codeReader.reset();
+  
+  const cleanCode = String(code).trim();
+  const foundZone = skuMap[cleanCode];
+
+  codeEl.innerText = cleanCode;
+  
+  if (foundZone) {
+    zoneEl.innerText = foundZone;
+    zoneEl.style.color = "#333";
+    // 성공 알림음 (선택)
+    // new Audio('beep.mp3').play().catch(e=>{}); 
+  } else {
+    zoneEl.innerText = "미등록";
+    zoneEl.style.color = "#dc3545"; // 빨간색
+    if(navigator.vibrate) navigator.vibrate([100,50,100]); // 징징!
+  }
+
+  restartBtn.style.display = "block";
+}
+
+restartBtn.addEventListener("click", () => {
   startScanner();
 });
-</script>
 
+// === 실행 시작 ===
+fetchData(false); // 1. 최초 실행
+
+// 2. 자동 갱신 타이머 (5분 = 300,000ms)
+// 시트가 15분 갱신이라도, 5분마다 찔러보는게 안전합니다.
+setInterval(() => {
+    fetchData(true); // 백그라운드 모드 (화면 안 가림)
+}, 300000); 
+
+</script>
 </body>
 </html>
