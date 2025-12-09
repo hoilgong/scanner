@@ -4,9 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport"
   content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>상품 존 조회</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<title>상품 존 조회 (ZXing)</title>
+
+<!-- ZXing -->
+<script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <style>
   html, body{
@@ -31,12 +33,13 @@
     overflow:hidden;
     position:relative;
   }
-  #scanner video{
-    object-fit:cover;
+  video{
     width:100%;
     height:100%;
+    object-fit:cover;
   }
 
+  /* 중앙 고정 레이저 라인 */
   .scan-line{
     position:absolute;
     top:50%;
@@ -67,14 +70,14 @@
     }
   }
 </style>
-
 </head>
 <body>
 
-<h2>상품 존 조회</h2>
+<h2>상품 존 조회 (ZXing)</h2>
 
 <div id="scanner">
   <div class="scan-line"></div>
+  <video id="video" muted playsinline></video>
 </div>
 
 <div id="zone">스캔 후 존이 표시됩니다</div>
@@ -88,60 +91,45 @@ fetch("https://script.google.com/macros/s/AKfycbxZ8_Sg90rJC8IczpXmK0NTRDuI1QV6B5
 .then(r=>r.json())
 .then(d=>skuMap = d);
 
-function startScanner(){
-  Quagga.init({
-    inputStream:{
-      type:"LiveStream",
-      target:document.querySelector('#scanner'),
-      constraints:{
-        facingMode:"environment",
-        advanced:[{zoom:1.0}]
+// ZXing Reader
+const codeReader = new ZXing.BrowserBarcodeReader();
+let selectedDeviceId;
+let scanning = false;
+
+async function startScanner(){
+  scanning = true;
+
+  const video = document.getElementById('video');
+  const devices = await codeReader.getVideoInputDevices();
+
+  // 후면카메라 선택 (가능하면)
+  const backCam = devices.find(d => /back|rear|환경/gi.test(d.label));
+  selectedDeviceId = backCam ? backCam.deviceId : devices[0].deviceId;
+
+  codeReader.decodeFromVideoDevice(selectedDeviceId, video, (result, err)=>{
+    if(result && scanning){
+      scanning = false;
+      codeReader.reset();
+
+      const code = result.text;
+
+      const zone = skuMap[code] || "미등록 코드";
+      document.getElementById("zone").innerText =
+        `바코드: ${code} / 존: ${zone}`;
+
+      if(navigator.vibrate){
+        navigator.vibrate(200);
       }
-    },
-    decoder:{
-      // 🔥 EAN 전용 (네가 원하는 바코드 형식만)
-      readers:[
-        "ean_13_reader",
-        "ean_reader",
-        "ean_8_reader"
-      ]
-    },
-    locate:true,
-    patchSize:"medium",
-    debug:false
-  }, err=>{
-    if(err){console.log(err);return;}
-    Quagga.start();
+    }
   });
 }
 
 startScanner();
 
-// =========================
-// 1번 읽으면 STOP
-// =========================
-Quagga.onDetected(res=>{
-  const code = res.codeResult.code;
-
-  Quagga.stop();
-
-  const zone = skuMap[code] || "미등록 코드";
-  document.getElementById("zone").innerText =
-    `바코드: ${code} / 존: ${zone}`;
-
-  if(navigator.vibrate){
-    navigator.vibrate(200);
-  }
-});
-
-// =========================
-// 다음 스캔
-// =========================
 document.getElementById("restartBtn").addEventListener("click", ()=>{
   document.getElementById("zone").innerText = "스캔 후 존이 표시됩니다";
   startScanner();
 });
-
 </script>
 
 </body>
