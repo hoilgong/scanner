@@ -39,17 +39,39 @@
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
   .status { font-size: 11px; color: #666; background: white; padding: 4px 8px; border-radius: 12px; }
 
-  /* 스캐너 */
+  /* 스캐너 영역 */
   #scanner-container {
-    width: 100%; max-width: 400px; height: 180px; 
+    width: 100%; max-width: 400px; height: 200px; 
     background: black; border-radius: 8px; overflow: hidden; position: relative;
     flex-shrink: 0; margin-bottom: 10px;
+    cursor: pointer; /* 터치 가능 표시 */
   }
   video { width: 100%; height: 100%; object-fit: cover; }
+  
   .scan-line {
     position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
     background: var(--kurly-purple); box-shadow: 0 0 5px #a050c0;
     transform: translateY(-50%); opacity: 0.8;
+    z-index: 5;
+  }
+
+  /* 초점 재설정 안내 문구 */
+  #focus-msg {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: white; font-weight: bold; background: rgba(0,0,0,0.6);
+    padding: 5px 10px; border-radius: 20px; font-size: 12px;
+    display: none; z-index: 10; pointer-events: none;
+  }
+  /* 터치 시 퍼지는 효과 */
+  .click-effect {
+    position: absolute; width: 40px; height: 40px;
+    border: 2px solid rgba(255,255,255,0.8); border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    animation: ripple 0.4s linear forwards;
+    pointer-events: none; z-index: 9;
+  }
+  @keyframes ripple {
+    to { transform: translate(-50%, -50%) scale(2); opacity: 0; }
   }
 
   /* 결과 리스트 */
@@ -76,7 +98,7 @@
   .value-jibun { font-size: 26px; font-weight: 800; color: #333; letter-spacing: -0.5px; }
   .value-zone { font-size: 32px; font-weight: 900; color: var(--kurly-purple); }
 
-  /* 버튼 */
+  /* 하단 고정 버튼 */
   #next-btn {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
     width: 90%; max-width: 380px;
@@ -108,12 +130,13 @@
 </div>
 
 <div class="header">
-  <div class="logo">Kurly</div>
+  <div class="logo">Kurly Work</div>
   <div class="status" id="status-txt">대기 중</div>
 </div>
 
-<div id="scanner-container">
+<div id="scanner-container" onclick="triggerRefocus(event)">
   <div class="scan-line"></div>
+  <div id="focus-msg">⚡ 초점 재설정</div>
   <video id="video" muted playsinline></video>
 </div>
 
@@ -144,13 +167,14 @@
 
 <script>
 // ============================================================
-// 👇 배포된 GAS URL (기존 것 그대로 사용)
+// 👇 배포된 GAS URL (기존 URL 유지)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz70yfqbnGqvAFTeMUeepbtNGqQjPGEnN24Nkpo4J5PVxis4t40kS8NaLFvxfdHWxGd/exec";
 // ============================================================
 
 let skuMap = {};
 let scanning = false;
 let codeReader = new ZXing.BrowserMultiFormatReader();
+let isFocusing = false; // 중복 터치 방지
 
 const els = {
   scan: document.getElementById("val-scan"),
@@ -160,7 +184,9 @@ const els = {
   zone: document.getElementById("val-zone"),
   status: document.getElementById("status-txt"),
   loading: document.getElementById("loading"),
-  btn: document.getElementById("next-btn")
+  btn: document.getElementById("next-btn"),
+  scanner: document.getElementById("scanner-container"),
+  focusMsg: document.getElementById("focus-msg")
 };
 
 // 1. 데이터 가져오기
@@ -190,35 +216,72 @@ async function fetchData(isBg) {
   }
 }
 
-// 2. 스캐너 가동 (🔥 초점/해상도 개선 설정)
+// 2. 스캐너 가동 (고해상도 + TryHarder 적용)
 async function startScanner() {
+  if(scanning) return; // 이미 돌고 있으면 패스
   scanning = true;
   els.btn.style.display = "none";
   resetUI();
   
   try {
-    // 🔥 여기가 핵심 변경사항입니다.
     const constraints = {
       audio: false,
       video: {
-        facingMode: "environment", // 후면 카메라
-        // 해상도를 높여서 자동 초점이 더 잘 잡히게 유도 (HD급)
-        width: { ideal: 1280 }, 
-        height: { ideal: 720 },
-        // 고급 설정: 연속 초점 모드 강제 요청
-        advanced: [{ focusMode: "continuous" }] 
+        facingMode: "environment",
+        width: { ideal: 1920 }, // FHD 시도 (초점 향상)
+        height: { ideal: 1080 },
+        // 자동 초점 지속 요청
+        advanced: [{ focusMode: "continuous" }]
       }
     };
 
+    // tryHarder: true -> 흐릿한 이미지도 CPU를 더 써서 읽으려고 노력함
     await codeReader.decodeFromConstraints(
       constraints,
       "video",
       (result) => { if(result && scanning) handleScan(result.text); }
     );
-  } catch(e) { console.error(e); }
+  } catch(e) { 
+    console.error("Scanner Error:", e);
+    scanning = false;
+  }
 }
 
-// 3. 스캔 처리
+// 3. 🔥 핵심 기능: 터치 시 강제 재시작 (Fake Refocus)
+async function triggerRefocus(e) {
+  if (!scanning || isFocusing) return;
+  isFocusing = true;
+
+  // 클릭 효과 UI
+  showClickEffect(e);
+  els.focusMsg.style.display = "block";
+
+  // 카메라 잠시 멈춤
+  codeReader.reset();
+  scanning = false;
+
+  // 0.3초 뒤 재시작 (기계가 렌즈를 다시 세팅하게 유도)
+  setTimeout(async () => {
+    els.focusMsg.style.display = "none";
+    isFocusing = false;
+    await startScanner();
+  }, 300);
+}
+
+// 터치 파문 효과
+function showClickEffect(e) {
+  const circle = document.createElement("div");
+  circle.classList.add("click-effect");
+  const rect = els.scanner.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  circle.style.left = x + "px";
+  circle.style.top = y + "px";
+  els.scanner.appendChild(circle);
+  setTimeout(() => circle.remove(), 500);
+}
+
+// 4. 스캔 성공 처리
 function handleScan(code) {
   scanning = false;
   codeReader.reset();
