@@ -21,7 +21,6 @@
     touch-action:none;
   }
 
-  /* 스캐너 영역 */
   #scanner{
     width:100%;
     max-width:380px;
@@ -38,7 +37,6 @@
     height:100%;
   }
 
-  /* 🔴 중앙 고정 스캔 라인 (움직이지 않음) */
   .scan-line{
     position:absolute;
     top:50%;
@@ -46,18 +44,16 @@
     width:100%;
     height:2px;
     background:red;
-    opacity:0.8;
+    opacity:0.85;
     transform:translateY(-50%);
   }
 
-  /* 결과 영역 */
   #zone{
     margin-top:20px;
     font-size:22px;
     font-weight:bold;
   }
 
-  /* 모바일에서 더 작게 */
   @media(max-width:600px){
     #scanner{
       height:200px;
@@ -79,14 +75,11 @@
 <script>
 let skuMap = {};
 
-// ⭐ 반드시 네 Apps Script URL로 바꿔
+// ⭐ Apps Script URL 고정 적용
 fetch("https://script.google.com/macros/s/AKfycbxZ8_Sg90rJC8IczpXmK0NTRDuI1QV6B5_h1AYN_gpnV750ZuDBZHker78bBZJoe1mj/exec")
 .then(r => r.json())
 .then(d => skuMap = d);
 
-// ====================
-// 스캔 시작
-// ====================
 Quagga.init({
   inputStream:{
     type:"LiveStream",
@@ -98,28 +91,27 @@ Quagga.init({
   },
   decoder:{
     readers:[
-      "code_128_reader",
+      "ean_13_reader",
       "ean_reader",
       "ean_8_reader",
-      "code_39_reader",
-      "upc_reader",
-      "upc_e_reader"
+      "code_128_reader"
     ]
   },
   locate:true,
-  patchSize:"x-large"
+  patchSize:"medium",
+  debug:false
 }, err => {
-  if(err){ console.log(err); return; }
+  if(err){
+    console.log(err);
+    return;
+  }
   Quagga.start();
 });
 
-// ====================
-// 스캔 1회만
-// ====================
 Quagga.onDetected(res => {
   const code = res.codeResult.code;
 
-  // 🔥 한 번 읽히면 스캔 종료
+  // 1회 스캔 후 종료
   Quagga.stop();
 
   const zone = skuMap[code] || "미등록 코드";
