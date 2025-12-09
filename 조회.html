@@ -2,15 +2,26 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>상품 존 조회</title>
 
-<!-- QuaggaJS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
 <style>
-  body{ font-family:Arial;padding:20px; }
+  html, body{
+    height:100%;
+    margin:0;
+    padding:0;
+    overflow:hidden;
+  }
+  body{
+    font-family:Arial;
+    padding:20px;
+    touch-action:none;
+  }
 
+  /* 스캐너 영역 */
   #scanner{
     width:100%;
     max-width:380px;
@@ -19,34 +30,34 @@
     border:2px solid #888;
     border-radius:8px;
     overflow:hidden;
-    position:relative;     /* 레이저 라인 위치 기준 */
+    position:relative;
+  }
+  #scanner video{
+    object-fit:cover;
+    width:100%;
+    height:100%;
   }
 
-  /* 🔴 레이저 라인 */
+  /* 🔴 중앙 고정 스캔 라인 (움직이지 않음) */
   .scan-line{
     position:absolute;
-    top:0;
+    top:50%;
     left:0;
     width:100%;
     height:2px;
     background:red;
     opacity:0.8;
-    animation: scan 2s linear infinite;
+    transform:translateY(-50%);
   }
 
-  @keyframes scan{
-    0%{ top:0; }
-    50%{ top:100%; }
-    100%{ top:0; }
-  }
-
+  /* 결과 영역 */
   #zone{
     margin-top:20px;
     font-size:22px;
     font-weight:bold;
   }
 
-  /* 📱모바일 작게 */
+  /* 모바일에서 더 작게 */
   @media(max-width:600px){
     #scanner{
       height:200px;
@@ -65,25 +76,24 @@
 
 <div id="zone">스캔 후 존이 표시됩니다</div>
 
-
 <script>
 let skuMap = {};
 
-// ⭐ 반드시 네 Apps Script 주소 넣어라!!
+// ⭐ 반드시 네 Apps Script URL로 바꿔
 fetch("https://script.google.com/macros/s/AKfycbxZ8_Sg90rJC8IczpXmK0NTRDuI1QV6B5_h1AYN_gpnV750ZuDBZHker78bBZJoe1mj/exec")
-.then(r=>r.json())
-.then(d=>skuMap = d);
+.then(r => r.json())
+.then(d => skuMap = d);
 
-
-// ===========================
-// 🔍 바코드 스캔
-// ===========================
+// ====================
+// 스캔 시작
+// ====================
 Quagga.init({
   inputStream:{
     type:"LiveStream",
     target:document.querySelector('#scanner'),
     constraints:{
-      facingMode:"environment"
+      facingMode:"environment",
+      advanced:[{ zoom:1.0 }]
     }
   },
   decoder:{
@@ -98,21 +108,24 @@ Quagga.init({
   },
   locate:true,
   patchSize:"x-large"
-}, err=>{
-  if(err){console.log(err);return;}
+}, err => {
+  if(err){ console.log(err); return; }
   Quagga.start();
 });
 
+// ====================
+// 스캔 1회만
+// ====================
+Quagga.onDetected(res => {
+  const code = res.codeResult.code;
 
-// ===========================
-// 결과 처리
-// ===========================
-Quagga.onDetected(res=>{
-  let code = res.codeResult.code;
-  let zone = skuMap[code] || "미등록 코드";
-  document.getElementById("zone").innerText = `바코드: ${code} / 존: ${zone}`;
+  // 🔥 한 번 읽히면 스캔 종료
+  Quagga.stop();
 
-  // 모바일 진동 feedback
+  const zone = skuMap[code] || "미등록 코드";
+  document.getElementById("zone").innerText =
+    `바코드: ${code} / 존: ${zone}`;
+
   if(navigator.vibrate){
     navigator.vibrate(200);
   }
