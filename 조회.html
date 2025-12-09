@@ -38,7 +38,6 @@
     object-fit:cover;
   }
 
-  /* 중앙 고정 레드 라인 */
   .scan-line{
     position:absolute;
     top:50%;
@@ -84,16 +83,12 @@
 <button id="restartBtn">다음 스캔</button>
 
 <script>
-let skuMap = {};
-
-fetch("https://script.google.com/macros/s/AKfycbxZ8_Sg90rJC8IczpXmK0NTRDuI1QV6B5_h1AYN_gpnV750ZuDBZHker78bBZJoe1mj/exec")
-.then(r=>r.json())
-.then(d=>skuMap = d);
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxZ8_Sg90rJC8IczpXmK0NTRDuI1QV6B5_h1AYN_gpnV750ZuDBZHker78bBZJoe1mj/exec";
 
 const codeReader = new ZXing.BrowserMultiFormatReader();
 let scanning = false;
 
-// ===== 스캔 시작 (decodeFromConstraints) =====
+// ===== 스캔 시작 =====
 async function startScanner(){
   scanning = true;
   const video = document.getElementById("video");
@@ -101,27 +96,30 @@ async function startScanner(){
   await codeReader.decodeFromConstraints(
     {
       audio: false,
-      video: {
-        facingMode: "environment",
-      }
+      video:{ facingMode:"environment" }
     },
     video,
-    (result, err)=>{
+    (result,err)=>{
       if(result && scanning){
         scanning = false;
         codeReader.reset();
 
-        const code = result.text;
-        const zone = skuMap[code] || "미등록 코드";
-        document.getElementById("zone").innerText =
-          `바코드: ${code} / 존: ${zone}`;
+        const code = String(result.text).trim();
 
-        if(navigator.vibrate){
-          navigator.vibrate(200);
-        }
+        // === 여기서 GAS 호출 (단일 조회)
+        fetch(GAS_URL + "?code=" + encodeURIComponent(code))
+          .then(r=>r.text())
+          .then(zone=>{
+            document.getElementById("zone").innerText =
+              `바코드: ${code} / 존: ${zone}`;
+
+            if(navigator.vibrate){
+              navigator.vibrate(200);
+            }
+          });
       }
     },
-    { tryHarder: true }
+    { tryHarder:true }
   );
 }
 
