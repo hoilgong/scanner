@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kurly Scanner</title>
-<script src="https://unpkg.com/@zxing/library@latest"></script>
+<title>Kurly Scanner Pro</title>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
 <style>
@@ -39,46 +39,19 @@
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
   .status { font-size: 11px; color: #666; background: white; padding: 4px 8px; border-radius: 12px; }
 
-  /* 스캐너 영역 */
-  #scanner-wrapper {
+  /* 스캐너 영역 (라이브러리가 자동으로 video 태그 생성함) */
+  #reader {
     width: 100%; max-width: 400px;
+    height: 250px; /* 높이 확보 */
+    background: black; border-radius: 8px; overflow: hidden;
     margin-bottom: 10px; flex-shrink: 0;
-    display: flex; flex-direction: column; gap: 5px;
+    position: relative;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   }
-
-  #scanner-container {
-    width: 100%; height: 200px; 
-    background: black; border-radius: 8px; overflow: hidden; position: relative;
-    cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  }
-  video { width: 100%; height: 100%; object-fit: cover; }
   
-  .scan-line {
-    position: absolute; top: 50%; left: 0; width: 100%; height: 2px;
-    background: var(--kurly-purple); box-shadow: 0 0 5px #a050c0;
-    transform: translateY(-50%); opacity: 0.8;
-    z-index: 5;
-  }
-
-  /* 줌 슬라이더 (지원되는 폰에서만 보임) */
-  #zoom-controls {
-    width: 100%; background: white; padding: 8px 15px; border-radius: 20px;
-    display: none; /* 초기엔 숨김 (기능 확인 후 표시) */
-    align-items: center; justify-content: space-between;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  }
-  #zoom-range {
-    width: 100%; accent-color: var(--kurly-purple); height: 5px; cursor: pointer;
-  }
-  .zoom-label { font-size: 11px; color: var(--text-gray); font-weight: bold; width: 40px; text-align: center;}
-
-  /* 안내 문구 */
-  #focus-msg {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    color: white; font-weight: bold; background: rgba(95, 0, 128, 0.85);
-    padding: 8px 16px; border-radius: 20px; font-size: 13px;
-    display: none; z-index: 10; pointer-events: none;
-  }
+  /* 라이브러리 내부 UI 커스텀 (못생긴 기본 UI 숨김) */
+  #reader__scan_region { background: rgba(0,0,0,0.5) !important; }
+  #reader__dashboard_section_csr button { display: none !important; } 
 
   /* 결과 리스트 */
   #result-wrapper {
@@ -136,23 +109,11 @@
 </div>
 
 <div class="header">
-  <div class="logo">Kurly</div>
+  <div class="logo">Kurly Work</div>
   <div class="status" id="status-txt">대기 중</div>
 </div>
 
-<div id="scanner-wrapper">
-  <div id="scanner-container" onclick="triggerRefocus()">
-    <div class="scan-line"></div>
-    <div id="focus-msg">⚡ 초점 재설정 중...</div>
-    <video id="video" muted playsinline></video>
-  </div>
-  
-  <div id="zoom-controls">
-    <span class="zoom-label">x1.0</span>
-    <input type="range" id="zoom-range" min="1" max="5" step="0.1" value="1">
-    <span class="zoom-label" id="zoom-val-txt">MAX</span>
-  </div>
-</div>
+<div id="reader"></div>
 
 <div id="result-wrapper">
   <div class="info-row">
@@ -181,16 +142,13 @@
 
 <script>
 // ============================================================
-// 👇 배포된 GAS URL
+// 👇 배포된 GAS URL (기존 URL 그대로 사용)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz70yfqbnGqvAFTeMUeepbtNGqQjPGEnN24Nkpo4J5PVxis4t40kS8NaLFvxfdHWxGd/exec";
 // ============================================================
 
 let skuMap = {};
-let scanning = false;
-let codeReader = new ZXing.BrowserMultiFormatReader();
-let isFocusing = false;
-let useHighRes = false;
-let track = null; // 비디오 트랙 제어용
+let html5QrCode = null;
+let isScanning = false; // 스캔 중인지 여부
 
 const els = {
   scan: document.getElementById("val-scan"),
@@ -200,13 +158,7 @@ const els = {
   zone: document.getElementById("val-zone"),
   status: document.getElementById("status-txt"),
   loading: document.getElementById("loading"),
-  btn: document.getElementById("next-btn"),
-  scanner: document.getElementById("scanner-container"),
-  focusMsg: document.getElementById("focus-msg"),
-  
-  zoomBox: document.getElementById("zoom-controls"),
-  zoomRange: document.getElementById("zoom-range"),
-  zoomTxt: document.getElementById("zoom-val-txt")
+  btn: document.getElementById("next-btn")
 };
 
 // 1. 데이터 가져오기
@@ -228,103 +180,66 @@ async function fetchData(isBg) {
   }
 }
 
-// 2. 스캐너 가동
+// 2. 스캐너 가동 (Html5Qrcode 라이브러리 사용)
 async function startScanner() {
-  if(scanning) return;
-  scanning = true;
+  if(isScanning) return;
   els.btn.style.display = "none";
   resetUI();
-  
+
+  // 라이브러리 초기화 (한 번만 생성)
+  if (!html5QrCode) {
+    html5QrCode = new Html5Qrcode("reader");
+  }
+
+  const config = { 
+    fps: 10,  // 초당 10번 스캔 (너무 높으면 느려짐)
+    // 🔥 여기가 핵심: 바코드 모양(직사각형)에 맞게 스캔 영역 지정
+    qrbox: { width: 250, height: 150 }, 
+    aspectRatio: 1.0
+  };
+
   try {
-    // 해상도 토글 로직 유지
-    const targetWidth = useHighRes ? 1920 : 1280;
-    
-    await codeReader.decodeFromConstraints(
-      {
-        audio: false,
-        video: {
-          facingMode: "environment",
-          width: { ideal: targetWidth },
-          height: { ideal: useHighRes ? 1080 : 720 },
-          advanced: [{ focusMode: "continuous" }]
-        }
-      },
-      "video",
-      (result) => { if(result && scanning) handleScan(result.text); }
+    isScanning = true;
+    // 후면 카메라 사용
+    await html5QrCode.start(
+      { facingMode: "environment" }, 
+      config, 
+      onScanSuccess, 
+      onScanFailure
     );
-
-    // 🔥 줌 기능 활성화 로직
-    setTimeout(enableZoomFunction, 500);
-
-  } catch(e) { 
-    console.error(e); scanning = false; 
+  } catch (err) {
+    console.error("Camera start failed", err);
+    isScanning = false;
   }
 }
 
-// 3. 줌 기능 설정 (핵심 추가)
-function enableZoomFunction() {
-  const video = document.getElementById("video");
-  if (!video || !video.srcObject) return;
-
-  const stream = video.srcObject;
-  track = stream.getVideoTracks()[0];
-  const capabilities = track.getCapabilities();
-
-  // 하드웨어 줌 지원 여부 확인
-  if ('zoom' in capabilities) {
-    els.zoomBox.style.display = "flex"; // 슬라이더 표시
-    
-    const min = capabilities.zoom.min;
-    const max = capabilities.zoom.max;
-    const step = capabilities.zoom.step;
-    
-    els.zoomRange.min = min;
-    els.zoomRange.max = max;
-    els.zoomRange.step = step;
-    
-    // 🔥 초기 자동 줌: 2.0배 또는 최대치의 30% (멀리서도 찍히게)
-    let initialZoom = Math.min(max, 2.0); 
-    els.zoomRange.value = initialZoom;
-    track.applyConstraints({ advanced: [{ zoom: initialZoom }] });
-    
-    els.zoomTxt.innerText = "x" + max; // 최대 배율 표시
-
-    // 슬라이더 조작 이벤트
-    els.zoomRange.oninput = function() {
-      track.applyConstraints({ advanced: [{ zoom: this.value }] });
-    };
-  } else {
-    // 줌 미지원 기기는 슬라이더 숨김
-    els.zoomBox.style.display = "none";
-  }
-}
-
-// 4. 터치 시 초점 재설정 (해상도 스위칭)
-async function triggerRefocus() {
-  if (!scanning || isFocusing) return;
-  isFocusing = true;
-  els.focusMsg.style.display = "block";
-  if(navigator.vibrate) navigator.vibrate(50);
-
-  useHighRes = !useHighRes;
+// 3. 스캔 성공 시
+function onScanSuccess(decodedText, decodedResult) {
+  if (!isScanning) return;
   
-  codeReader.reset();
-  scanning = false;
-  setTimeout(async () => {
-    els.focusMsg.style.display = "none";
-    isFocusing = false;
-    await startScanner();
-  }, 200);
+  // 스캔 성공하면 카메라 멈춤
+  html5QrCode.stop().then(() => {
+    isScanning = false;
+    handleResult(decodedText);
+  }).catch(err => {
+    console.log("Stop failed", err);
+    isScanning = false;
+    handleResult(decodedText);
+  });
 }
 
-// 5. 결과 처리
-function handleScan(code) {
-  scanning = false;
-  codeReader.reset();
+// 스캔 실패 (계속 탐색 중)
+function onScanFailure(error) {
+  // console.warn(`Code scan error = ${error}`);
+}
+
+// 4. 결과 처리
+function handleResult(code) {
   const cleanCode = String(code).trim();
   const item = skuMap[cleanCode];
 
   els.scan.innerText = cleanCode;
+
   if (item) {
     els.name.innerText = item[0];
     els.code.innerText = item[1];
@@ -340,6 +255,7 @@ function handleScan(code) {
     els.zone.innerText = "-";
     if(navigator.vibrate) navigator.vibrate([100,50,100]);
   }
+  
   els.btn.style.display = "block";
 }
 
@@ -352,7 +268,9 @@ function resetUI() {
   els.zone.innerText = "-";
 }
 
-els.btn.addEventListener("click", startScanner);
+els.btn.addEventListener("click", () => {
+  startScanner();
+});
 els.status.addEventListener("click", () => {
     if(confirm("데이터를 갱신할까요?")) fetchData(false);
 });
