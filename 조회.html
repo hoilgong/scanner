@@ -39,27 +39,37 @@
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
   .status { font-size: 11px; color: #666; background: white; padding: 4px 8px; border-radius: 12px; }
 
-  /* 스캐너 영역 (라이브러리가 자동으로 video 태그 생성함) */
+  /* 스캐너 영역 (라이브러리가 카메라를 띄우는 곳) */
   #reader {
     width: 100%; max-width: 400px;
-    height: 250px; /* 높이 확보 */
+    height: 250px; /* 세로 길이 넉넉하게 */
     background: black; border-radius: 8px; overflow: hidden;
     margin-bottom: 10px; flex-shrink: 0;
     position: relative;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   }
   
-  /* 라이브러리 내부 UI 커스텀 (못생긴 기본 UI 숨김) */
-  #reader__scan_region { background: rgba(0,0,0,0.5) !important; }
+  /* 라이브러리 기본 UI 숨기기 (깔끔하게) */
+  #reader__scan_region { 
+    background: rgba(0, 0, 0, 0.4) !important; /* 주변 어둡게 */
+  }
   #reader__dashboard_section_csr button { display: none !important; } 
+  #reader video { object-fit: cover; }
 
-  /* 결과 리스트 */
+  /* 안내 문구 */
+  .guide-msg {
+    position: absolute; bottom: 10px; width: 100%; text-align: center;
+    color: rgba(255,255,255,0.8); font-size: 12px; z-index: 10; pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+
+  /* 결과 리스트 카드 */
   #result-wrapper {
     flex-grow: 1; width: 100%; max-width: 400px;
     background: white; border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     overflow-y: auto;
-    padding: 20px 20px 90px 20px; 
+    padding: 20px 20px 90px 20px; /* 하단 패딩 확보 */
   }
 
   .info-row {
@@ -89,7 +99,7 @@
   }
   #next-btn:active { transform: translateX(-50%) scale(0.98); background: #4a0063; }
 
-  /* 로딩 */
+  /* 로딩 오버레이 */
   #loading {
     position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 999;
     display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -109,11 +119,13 @@
 </div>
 
 <div class="header">
-  <div class="logo">Kurly Work</div>
+  <div class="logo">Kurly</div>
   <div class="status" id="status-txt">대기 중</div>
 </div>
 
-<div id="reader"></div>
+<div id="reader">
+  <div class="guide-msg">초록색 박스 안에 바코드를 맞춰주세요</div>
+</div>
 
 <div id="result-wrapper">
   <div class="info-row">
@@ -148,7 +160,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbz70yfqbnGqvAFTeMUeepbt
 
 let skuMap = {};
 let html5QrCode = null;
-let isScanning = false; // 스캔 중인지 여부
+let isScanning = false;
 
 const els = {
   scan: document.getElementById("val-scan"),
@@ -168,9 +180,11 @@ async function fetchData(isBg) {
     const res = await fetch(GAS_URL + "?t=" + Date.now());
     const data = await res.json();
     if(data.ERROR) throw new Error(data.ERROR);
+    
     skuMap = data;
     const time = new Date().toTimeString().substring(0,5);
     els.status.innerText = `Update ${time} (${Object.keys(data).length})`;
+    
     if(!isBg) {
       els.loading.style.display = 'none';
       startScanner();
@@ -180,27 +194,28 @@ async function fetchData(isBg) {
   }
 }
 
-// 2. 스캐너 가동 (Html5Qrcode 라이브러리 사용)
+// 2. 스캐너 시작 (Html5Qrcode 라이브러리)
+// 🔥 수정사항: 자동 줌/트릭 제거, 기본 고성능 모드 사용
 async function startScanner() {
   if(isScanning) return;
   els.btn.style.display = "none";
   resetUI();
 
-  // 라이브러리 초기화 (한 번만 생성)
+  // 라이브러리 인스턴스 생성 (없을 때만)
   if (!html5QrCode) {
     html5QrCode = new Html5Qrcode("reader");
   }
 
+  // 스캔 설정
   const config = { 
-    fps: 10,  // 초당 10번 스캔 (너무 높으면 느려짐)
-    // 🔥 여기가 핵심: 바코드 모양(직사각형)에 맞게 스캔 영역 지정
-    qrbox: { width: 250, height: 150 }, 
+    fps: 10,        // 초당 10회 스캔 (안정적)
+    qrbox: { width: 250, height: 150 }, // 바코드용 직사각형 박스
     aspectRatio: 1.0
   };
 
   try {
     isScanning = true;
-    // 후면 카메라 사용
+    // 후면 카메라 시작
     await html5QrCode.start(
       { facingMode: "environment" }, 
       config, 
@@ -208,8 +223,9 @@ async function startScanner() {
       onScanFailure
     );
   } catch (err) {
-    console.error("Camera start failed", err);
+    console.error("Camera failed", err);
     isScanning = false;
+    alert("카메라 시작 실패. 권한을 확인해주세요.");
   }
 }
 
@@ -217,23 +233,21 @@ async function startScanner() {
 function onScanSuccess(decodedText, decodedResult) {
   if (!isScanning) return;
   
-  // 스캔 성공하면 카메라 멈춤
+  // 성공하면 카메라 정지 후 결과 표시
   html5QrCode.stop().then(() => {
     isScanning = false;
     handleResult(decodedText);
   }).catch(err => {
-    console.log("Stop failed", err);
+    // 멈추는 중 에러나도 일단 결과는 표시
     isScanning = false;
     handleResult(decodedText);
   });
 }
 
-// 스캔 실패 (계속 탐색 중)
-function onScanFailure(error) {
-  // console.warn(`Code scan error = ${error}`);
-}
+// 스캔 중 (실패 로그는 무시)
+function onScanFailure(error) {}
 
-// 4. 결과 처리
+// 4. 결과 UI 표시
 function handleResult(code) {
   const cleanCode = String(code).trim();
   const item = skuMap[cleanCode];
@@ -246,6 +260,8 @@ function handleResult(code) {
     els.jibun.innerText = item[2];
     els.zone.innerText = item[3];
     els.name.style.color = "#333";
+    
+    // 성공 진동 (짧게)
     if(navigator.vibrate) navigator.vibrate(100);
   } else {
     els.name.innerText = "미등록 상품";
@@ -253,6 +269,8 @@ function handleResult(code) {
     els.code.innerText = "-";
     els.jibun.innerText = "-";
     els.zone.innerText = "-";
+    
+    // 실패 진동 (지잉-징)
     if(navigator.vibrate) navigator.vibrate([100,50,100]);
   }
   
@@ -268,6 +286,7 @@ function resetUI() {
   els.zone.innerText = "-";
 }
 
+// 이벤트 리스너
 els.btn.addEventListener("click", () => {
   startScanner();
 });
@@ -275,6 +294,7 @@ els.status.addEventListener("click", () => {
     if(confirm("데이터를 갱신할까요?")) fetchData(false);
 });
 
+// 실행
 fetchData(false);
 setInterval(() => fetchData(true), 300000); 
 </script>
