@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kurly Scanner Pro</title>
+<title>Kurly Scanner High-Res</title>
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
@@ -39,37 +39,28 @@
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
   .status { font-size: 11px; color: #666; background: white; padding: 4px 8px; border-radius: 12px; }
 
-  /* 스캐너 영역 (라이브러리가 카메라를 띄우는 곳) */
+  /* 스캐너 영역 */
   #reader {
     width: 100%; max-width: 400px;
-    height: 250px; /* 세로 길이 넉넉하게 */
+    height: 250px; 
     background: black; border-radius: 8px; overflow: hidden;
     margin-bottom: 10px; flex-shrink: 0;
     position: relative;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   }
   
-  /* 라이브러리 기본 UI 숨기기 (깔끔하게) */
-  #reader__scan_region { 
-    background: rgba(0, 0, 0, 0.4) !important; /* 주변 어둡게 */
-  }
+  /* 라이브러리 UI 정리 */
+  #reader__scan_region { background: rgba(0, 0, 0, 0.5) !important; }
   #reader__dashboard_section_csr button { display: none !important; } 
   #reader video { object-fit: cover; }
 
-  /* 안내 문구 */
-  .guide-msg {
-    position: absolute; bottom: 10px; width: 100%; text-align: center;
-    color: rgba(255,255,255,0.8); font-size: 12px; z-index: 10; pointer-events: none;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-  }
-
-  /* 결과 리스트 카드 */
+  /* 결과 리스트 */
   #result-wrapper {
     flex-grow: 1; width: 100%; max-width: 400px;
     background: white; border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     overflow-y: auto;
-    padding: 20px 20px 90px 20px; /* 하단 패딩 확보 */
+    padding: 20px 20px 90px 20px; 
   }
 
   .info-row {
@@ -82,7 +73,6 @@
   .label { font-size: 12px; color: var(--text-gray); margin-bottom: 4px; }
   .value { font-size: 15px; color: var(--text-black); font-weight: 500; word-break: break-all; }
   
-  /* 강조 스타일 */
   .value-name { font-size: 18px; font-weight: 700; color: var(--text-black); line-height: 1.3; }
   .value-jibun { font-size: 26px; font-weight: 800; color: #333; letter-spacing: -0.5px; }
   .value-zone { font-size: 32px; font-weight: 900; color: var(--kurly-purple); }
@@ -99,7 +89,6 @@
   }
   #next-btn:active { transform: translateX(-50%) scale(0.98); background: #4a0063; }
 
-  /* 로딩 오버레이 */
   #loading {
     position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 999;
     display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -119,12 +108,14 @@
 </div>
 
 <div class="header">
-  <div class="logo">Kurly</div>
+  <div class="logo">Kurly Work</div>
   <div class="status" id="status-txt">대기 중</div>
 </div>
 
 <div id="reader">
-  <div class="guide-msg">초록색 박스 안에 바코드를 맞춰주세요</div>
+  <div style="position:absolute; bottom:10px; width:100%; text-align:center; color:rgba(255,255,255,0.8); font-size:12px; z-index:10; pointer-events:none;">
+    초록색 박스에 맞춰주세요
+  </div>
 </div>
 
 <div id="result-wrapper">
@@ -154,7 +145,7 @@
 
 <script>
 // ============================================================
-// 👇 배포된 GAS URL (기존 URL 그대로 사용)
+// 👇 배포된 GAS URL (기존 URL 유지)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz70yfqbnGqvAFTeMUeepbtNGqQjPGEnN24Nkpo4J5PVxis4t40kS8NaLFvxfdHWxGd/exec";
 // ============================================================
 
@@ -180,11 +171,9 @@ async function fetchData(isBg) {
     const res = await fetch(GAS_URL + "?t=" + Date.now());
     const data = await res.json();
     if(data.ERROR) throw new Error(data.ERROR);
-    
     skuMap = data;
     const time = new Date().toTimeString().substring(0,5);
     els.status.innerText = `Update ${time} (${Object.keys(data).length})`;
-    
     if(!isBg) {
       els.loading.style.display = 'none';
       startScanner();
@@ -194,30 +183,38 @@ async function fetchData(isBg) {
   }
 }
 
-// 2. 스캐너 시작 (Html5Qrcode 라이브러리)
-// 🔥 수정사항: 자동 줌/트릭 제거, 기본 고성능 모드 사용
+// 2. 스캐너 시작 (초고화질 모드 적용)
 async function startScanner() {
   if(isScanning) return;
   els.btn.style.display = "none";
   resetUI();
 
-  // 라이브러리 인스턴스 생성 (없을 때만)
   if (!html5QrCode) {
     html5QrCode = new Html5Qrcode("reader");
   }
 
-  // 스캔 설정
+  // 🔥 핵심: width와 height를 아주 크게 잡아서(4K급) 
+  // 카메라가 지원하는 '최대 해상도'를 끌어내도록 유도합니다.
+  const videoConstraints = {
+    facingMode: "environment",
+    width: { ideal: 3840 }, // 4K 해상도 요청
+    height: { ideal: 2160 },
+    focusMode: "continuous" // 연속 초점
+  };
+
   const config = { 
-    fps: 10,        // 초당 10회 스캔 (안정적)
-    qrbox: { width: 250, height: 150 }, // 바코드용 직사각형 박스
+    fps: 10,
+    // 스캔 박스 크기: 너무 작으면 맞추기 힘드니 적당히 키움
+    qrbox: { width: 260, height: 180 }, 
     aspectRatio: 1.0
   };
 
   try {
     isScanning = true;
-    // 후면 카메라 시작
+    
+    // start 함수의 첫 번째 인자로 비디오 제약 조건을 직접 전달
     await html5QrCode.start(
-      { facingMode: "environment" }, 
+      videoConstraints, 
       config, 
       onScanSuccess, 
       onScanFailure
@@ -225,29 +222,24 @@ async function startScanner() {
   } catch (err) {
     console.error("Camera failed", err);
     isScanning = false;
-    alert("카메라 시작 실패. 권한을 확인해주세요.");
+    alert("카메라 권한을 확인해주세요.");
   }
 }
 
-// 3. 스캔 성공 시
-function onScanSuccess(decodedText, decodedResult) {
+function onScanSuccess(decodedText) {
   if (!isScanning) return;
   
-  // 성공하면 카메라 정지 후 결과 표시
   html5QrCode.stop().then(() => {
     isScanning = false;
     handleResult(decodedText);
-  }).catch(err => {
-    // 멈추는 중 에러나도 일단 결과는 표시
+  }).catch(() => {
     isScanning = false;
     handleResult(decodedText);
   });
 }
 
-// 스캔 중 (실패 로그는 무시)
 function onScanFailure(error) {}
 
-// 4. 결과 UI 표시
 function handleResult(code) {
   const cleanCode = String(code).trim();
   const item = skuMap[cleanCode];
@@ -260,8 +252,6 @@ function handleResult(code) {
     els.jibun.innerText = item[2];
     els.zone.innerText = item[3];
     els.name.style.color = "#333";
-    
-    // 성공 진동 (짧게)
     if(navigator.vibrate) navigator.vibrate(100);
   } else {
     els.name.innerText = "미등록 상품";
@@ -269,11 +259,8 @@ function handleResult(code) {
     els.code.innerText = "-";
     els.jibun.innerText = "-";
     els.zone.innerText = "-";
-    
-    // 실패 진동 (지잉-징)
     if(navigator.vibrate) navigator.vibrate([100,50,100]);
   }
-  
   els.btn.style.display = "block";
 }
 
@@ -286,15 +273,11 @@ function resetUI() {
   els.zone.innerText = "-";
 }
 
-// 이벤트 리스너
-els.btn.addEventListener("click", () => {
-  startScanner();
-});
+els.btn.addEventListener("click", () => startScanner());
 els.status.addEventListener("click", () => {
     if(confirm("데이터를 갱신할까요?")) fetchData(false);
 });
 
-// 실행
 fetchData(false);
 setInterval(() => fetchData(true), 300000); 
 </script>
