@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kurly Scanner Safe</title>
+<title>Kurly Scanner Focus+</title>
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
@@ -49,7 +49,7 @@
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
   }
   
-  /* 라이브러리 UI 정리 */
+  /* 라이브러리 UI 커스텀 */
   #reader__scan_region { background: rgba(0, 0, 0, 0.6) !important; }
   #reader__dashboard_section_csr button { display: none !important; } 
   #reader video { object-fit: cover; }
@@ -108,13 +108,13 @@
 </div>
 
 <div class="header">
-  <div class="logo">Kurly Work</div>
+  <div class="logo">Kurly</div>
   <div class="status" id="status-txt">대기 중</div>
 </div>
 
 <div id="reader">
   <div style="position:absolute; bottom:10px; width:100%; text-align:center; color:rgba(255,255,255,0.9); font-size:12px; z-index:10; pointer-events:none; font-weight:bold;">
-    박스 안에 바코드를 꽉 차게 맞춰주세요
+    초록색 박스에 바코드를 맞춰주세요
   </div>
 </div>
 
@@ -183,7 +183,7 @@ async function fetchData(isBg) {
   }
 }
 
-// 2. 스캐너 시작 (안전 모드)
+// 2. 스캐너 시작 (앱시트 스타일 연속 초점 적용)
 async function startScanner() {
   if(isScanning) return;
   els.btn.style.display = "none";
@@ -193,21 +193,29 @@ async function startScanner() {
     html5QrCode = new Html5Qrcode("reader");
   }
 
-  // 🔥 수정: 해상도 강제 설정을 빼고, 박스를 작게 만들어서 정밀도 향상
-  // qrbox를 작게 잡으면, 사용자가 바코드를 가까이 대지 않아도
-  // 소프트웨어적으로 줌을 한 것 같은 효과(집중)를 줍니다.
+  // 🔥 핵심: 연속 초점(Continuous Focus)을 위한 강력한 설정
+  // width/height를 '범위'로 주어 OS가 가장 초점 잘 잡는 해상도를 선택하게 함
+  const videoConstraints = {
+    facingMode: "environment",
+    focusMode: "continuous", // 표준 웹 API
+    width: { min: 1024, ideal: 1920, max: 3840 }, 
+    height: { min: 720, ideal: 1080, max: 2160 },
+    advanced: [{ focusMode: "continuous" }] // 추가 강제 설정
+  };
+
   const config = { 
-    fps: 10,
-    qrbox: { width: 220, height: 120 }, // 박스 크기를 줄여서 집중력 UP
-    aspectRatio: 1.0
+    fps: 15, // 초당 스캔 횟수를 늘려 반응속도 향상
+    qrbox: { width: 260, height: 130 }, // 바코드 모양의 얇은 박스
+    aspectRatio: 1.0,
+    disableFlip: false
   };
 
   try {
     isScanning = true;
     
-    // 단순하게 "후면 카메라"만 요청 -> 호환성 100%
+    // 비디오 제약조건을 직접 전달
     await html5QrCode.start(
-      { facingMode: "environment" }, 
+      videoConstraints, 
       config, 
       onScanSuccess, 
       onScanFailure
@@ -215,9 +223,24 @@ async function startScanner() {
   } catch (err) {
     console.error("Camera Error:", err);
     isScanning = false;
-    // 에러 내용을 사용자에게 보여줌 (디버깅용)
-    alert("카메라 오류: " + err.name + "\n(새로고침 해주세요)");
+    // 실패 시 기본 설정으로 재시도 (안전장치)
+    alert("고성능 모드 실패. 기본 모드로 전환합니다.");
+    fallbackScanner();
   }
+}
+
+// 혹시 고성능 모드가 안 켜지면 실행되는 기본 모드
+async function fallbackScanner() {
+    try {
+        await html5QrCode.start(
+            { facingMode: "environment" }, 
+            { fps: 10, qrbox: { width: 250, height: 150 } }, 
+            onScanSuccess, 
+            onScanFailure
+        );
+    } catch(e) {
+        alert("카메라를 켤 수 없습니다.");
+    }
 }
 
 function onScanSuccess(decodedText) {
