@@ -22,7 +22,7 @@
   }
 
   /* 헤더 */
-  .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+  .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-shrink: 0;}
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
   
   .status-btn { 
@@ -36,12 +36,12 @@
   /* 작업자 이름 표시 */
   #worker-display {
     width: 100%; max-width: 400px; text-align: right;
-    font-size: 12px; color: #666; margin-bottom: 5px; font-weight: 500;
+    font-size: 12px; color: #666; margin-bottom: 5px; font-weight: 500; flex-shrink: 0;
   }
 
   /* 단계바 */
   #step-bar {
-    width: 100%; max-width: 400px; display: flex; margin-bottom: 10px;
+    width: 100%; max-width: 400px; display: flex; margin-bottom: 10px; flex-shrink: 0;
     background: #ddd; border-radius: 20px; overflow: hidden;
   }
   .step { flex: 1; text-align: center; padding: 8px 0; font-size: 13px; font-weight: bold; color: #999; }
@@ -53,7 +53,7 @@
     width: 100%; max-width: 400px; height: 250px;
     background: black; border-radius: 8px; overflow: hidden; margin-bottom: 10px;
     border: 4px solid var(--kurly-purple); transition: border-color 0.3s;
-    position: relative;
+    position: relative; flex-shrink: 0;
     display: flex; justify-content: center; align-items: center;
   }
   
@@ -65,8 +65,15 @@
   #guide-msg {
     width: 100%; max-width: 400px; text-align: center;
     font-size: 18px; font-weight: 800; margin-bottom: 10px;
-    color: var(--kurly-purple);
+    color: var(--kurly-purple); flex-shrink: 0;
   }
+
+  /* 🔥 수기 입력 (위치 변경됨: 카메라 바로 아래) */
+  #manual-box { 
+    width: 100%; max-width: 400px; display: flex; gap: 5px; margin-bottom: 10px; flex-shrink: 0; 
+  }
+  #manual-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
+  #manual-btn { background: #555; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; }
 
   /* 정보 카드 */
   #info-card {
@@ -86,11 +93,6 @@
     display: none; 
   }
   .target-val { font-size: 32px; font-weight: 900; color: var(--kurly-orange); }
-
-  /* 수기 입력 (2단계에선 숨김 처리됨) */
-  #manual-box { width: 100%; max-width: 400px; display: flex; gap: 5px; margin-top: 10px; }
-  #manual-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
-  #manual-btn { background: #555; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; }
 
   /* 팝업 스타일 */
   .modal-overlay {
@@ -170,6 +172,11 @@
 
 <div id="reader"></div>
 
+<div id="manual-box">
+  <input type="text" id="m-input" placeholder="바코드 직접 입력">
+  <button id="m-btn">확인</button>
+</div>
+
 <div id="info-card">
   <div class="row">
     <div class="label">상품명 (수량)</div>
@@ -180,11 +187,6 @@
     <div class="label" style="color:#d9480f">⬇️ 이 지번에 상품을 넣으세요</div>
     <div class="target-val" id="p-jibun">-</div>
   </div>
-</div>
-
-<div id="manual-box">
-  <input type="text" id="m-input" placeholder="바코드 직접 입력">
-  <button id="m-btn">확인</button>
 </div>
 
 <script>
@@ -318,7 +320,7 @@ function confirmQty() {
 function moveToStep2() {
   els.pName.innerText = `${currentProduct.name} (${currentProduct.qty}개)`;
   els.pJibun.innerText = currentProduct.jibun;
-  setStep(2); // 2단계 진입
+  setStep(2); 
   isProcessing = false; 
 }
 
@@ -331,7 +333,7 @@ function handleLocationScan(scannedJibun) {
     showMessage("✅", "재적치 완료!", "green");
     playSound("success");
     setTimeout(() => {
-      setStep(1); // 다시 1단계로
+      setStep(1); 
       clearInfo();
       isProcessing = false; 
     }, 1500);
@@ -362,7 +364,6 @@ function saveLog(scannedLoc) {
 function setStep(step) {
   currentStep = step;
   if(step === 1) {
-    // [1단계] 설정
     els.step1.classList.add("active");
     els.step2.classList.remove("active-2");
     els.reader.style.borderColor = "#5f0080"; 
@@ -370,10 +371,9 @@ function setStep(step) {
     els.guide.style.color = "#5f0080";
     els.targetArea.style.display = "none";
     
-    // 🔥 1단계에선 수기 입력 보이기
+    // 1단계: 수기 입력 보이기
     els.manualBox.style.display = "flex"; 
   } else {
-    // [2단계] 설정
     els.step1.classList.remove("active");
     els.step2.classList.add("active-2");
     els.reader.style.borderColor = "#ff6b00"; 
@@ -381,7 +381,7 @@ function setStep(step) {
     els.guide.style.color = "#ff6b00";
     els.targetArea.style.display = "block";
 
-    // 🔥 어뷰징 방지: 2단계에선 수기 입력 숨김!
+    // 2단계: 수기 입력 숨기기 (어뷰징 방지)
     els.manualBox.style.display = "none"; 
   }
 }
