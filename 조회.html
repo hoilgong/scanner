@@ -37,7 +37,15 @@
     margin-bottom: 5px; flex-shrink: 0;
   }
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
-  .status { font-size: 11px; color: #666; background: white; padding: 4px 8px; border-radius: 12px; }
+  
+  /* 🔥 새로고침 버튼 스타일 (추가됨) */
+  .status-btn { 
+    font-size: 12px; background: white; padding: 6px 12px; 
+    border-radius: 20px; color: #555; font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer;
+    display: flex; align-items: center; gap: 5px; border: 1px solid transparent;
+  }
+  .status-btn:active { transform: scale(0.95); background: #eee; }
 
   /* 스캐너 */
   #reader {
@@ -130,7 +138,9 @@
 
 <div class="header">
   <div class="logo">Kurly Simple</div>
-  <div class="status" id="status-txt">대기 중</div>
+  <div id="refresh-btn" class="status-btn">
+    <span id="status-txt">대기 중</span> 🔄
+  </div>
 </div>
 
 <div id="reader"></div>
@@ -166,7 +176,7 @@
 
 <script>
 // ============================================================
-// 👇 배포된 GAS ID (그대로 유지)
+// 👇 배포된 GAS ID (조회용 ID 유지)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxlnPMPZAWhPum7f-yl3EVVn_wFqrh_v0GB6Edncx20eglrylv0iDbdET7o_jaPfj3e/exec";
 // ============================================================
 
@@ -185,7 +195,8 @@ const els = {
   nextBtn: document.getElementById("next-btn"),
   
   manualInput: document.getElementById("manual-input"),
-  manualBtn: document.getElementById("manual-btn")
+  manualBtn: document.getElementById("manual-btn"),
+  refreshBtn: document.getElementById("refresh-btn") // 새로고침 버튼
 };
 
 // 1. 데이터 가져오기
@@ -204,7 +215,7 @@ async function fetchData(isBg) {
   }
 }
 
-// 2. 스캐너 시작
+// 2. 스캐너 시작 (연속 초점 적용)
 async function startScanner() {
   if(isScanning) return;
   els.nextBtn.style.display = "none";
@@ -218,7 +229,8 @@ async function startScanner() {
   const config = { 
     fps: 10,
     qrbox: { width: 250, height: 150 },
-    aspectRatio: 1.0
+    aspectRatio: 1.0,
+    videoConstraints: { focusMode: "continuous" }
   };
 
   try {
@@ -257,8 +269,7 @@ function handleResult(code) {
   if (item) {
     els.name.innerText = item[0];
     els.code.innerText = item[1];
-    els.zone.innerText = item[3]; // 존 표시
-    
+    els.zone.innerText = item[3]; 
     els.name.style.color = "#333";
     if(navigator.vibrate) navigator.vibrate(100);
   } else {
@@ -290,6 +301,13 @@ els.manualBtn.addEventListener("click", () => {
 
 els.manualInput.addEventListener("keypress", (e) => {
   if(e.key === "Enter") els.manualBtn.click();
+});
+
+// 🔥 새로고침 버튼 이벤트
+els.refreshBtn.addEventListener("click", () => {
+  if(confirm("데이터를 새로고침 하시겠습니까?")) {
+    fetchData(false); // 수동 새로고침
+  }
 });
 
 fetchData(false);
