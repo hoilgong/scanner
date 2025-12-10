@@ -42,7 +42,7 @@
   /* 스캐너 */
   #reader {
     width: 100%; max-width: 400px;
-    height: 250px; 
+    height: 220px; 
     background: black; border-radius: 8px; overflow: hidden;
     margin-bottom: 10px; flex-shrink: 0;
     position: relative;
@@ -73,32 +73,38 @@
     background: white; border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     overflow-y: auto;
-    padding: 20px 20px 90px 20px; 
+    padding: 15px 20px; 
   }
 
   .info-row {
     display: flex; flex-direction: column;
     border-bottom: 1px solid var(--border-color);
-    padding: 10px 0;
+    padding: 8px 0;
   }
   .info-row:last-child { border-bottom: none; }
 
-  .label { font-size: 12px; color: var(--text-gray); margin-bottom: 4px; }
-  .value { font-size: 15px; color: var(--text-black); font-weight: 500; word-break: break-all; }
+  .label { font-size: 12px; color: var(--text-gray); margin-bottom: 2px; }
+  .value { font-size: 16px; color: var(--text-black); font-weight: 500; word-break: break-all; }
   
   .value-name { font-size: 18px; font-weight: 700; color: var(--text-black); line-height: 1.3; }
-  .value-jibun { font-size: 26px; font-weight: 800; color: #333; letter-spacing: -0.5px; }
-  .value-zone { font-size: 32px; font-weight: 900; color: var(--kurly-purple); }
+  
+  /* 존(Zone) 강조 */
+  .value-zone { 
+    font-size: 40px; 
+    font-weight: 900; 
+    color: var(--kurly-purple); 
+    line-height: 1.1;
+  }
 
-  /* 다음 스캔 버튼 (하나로 통일) */
+  /* 다음 스캔 버튼 */
   #next-btn {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
     width: 90%; max-width: 400px;
     padding: 16px; border: none; border-radius: 8px;
     background: var(--kurly-purple); color: white;
-    font-size: 16px; font-weight: 700; cursor: pointer;
+    font-size: 18px; font-weight: 800; cursor: pointer;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    display: none; /* 초기엔 숨김 */
+    display: none; 
     z-index: 100;
   }
   #next-btn:active { transform: translateX(-50%) scale(0.98); background: #4a0063; }
@@ -127,11 +133,7 @@
   <div class="status" id="status-txt">대기 중</div>
 </div>
 
-<div id="reader">
-  <div style="position:absolute; bottom:10px; width:100%; text-align:center; color:rgba(255,255,255,0.9); font-size:12px; z-index:10; pointer-events:none; font-weight:bold;">
-    초록색 박스에 바코드를 맞춰주세요
-  </div>
-</div>
+<div id="reader"></div>
 
 <div id="manual-box">
   <input type="text" id="manual-input" placeholder="바코드 직접 입력 (Enter)">
@@ -143,20 +145,19 @@
     <div class="label">대체코드 (스캔값)</div>
     <div class="value" id="val-scan">스캔 대기 중...</div>
   </div>
+  
   <div class="info-row">
     <div class="label">상품명</div>
     <div class="value value-name" id="val-name">-</div>
   </div>
+  
   <div class="info-row">
     <div class="label">상품코드</div>
     <div class="value" id="val-code">-</div>
   </div>
-  <div class="info-row">
-    <div class="label">지번</div>
-    <div class="value value-jibun" id="val-jibun">-</div>
-  </div>
-  <div class="info-row" style="border-bottom:none">
-    <div class="label">ZONE</div>
+  
+  <div class="info-row" style="border-bottom:none; padding-top:15px;">
+    <div class="label">ZONE (구역)</div>
     <div class="value value-zone" id="val-zone">-</div>
   </div>
 </div>
@@ -177,19 +178,17 @@ const els = {
   scan: document.getElementById("val-scan"),
   name: document.getElementById("val-name"),
   code: document.getElementById("val-code"),
-  jibun: document.getElementById("val-jibun"),
   zone: document.getElementById("val-zone"),
   status: document.getElementById("status-txt"),
   loading: document.getElementById("loading"),
   loadingTxt: document.getElementById("loading-txt"),
   nextBtn: document.getElementById("next-btn"),
   
-  // 수기 입력 관련
   manualInput: document.getElementById("manual-input"),
   manualBtn: document.getElementById("manual-btn")
 };
 
-// 1. 데이터 가져오기 (조회용 데이터만 로드)
+// 1. 데이터 가져오기
 async function fetchData(isBg) {
   if(!isBg) { els.loading.style.display = 'flex'; els.loadingTxt.innerText = "데이터 동기화 중..."; }
   try {
@@ -235,7 +234,6 @@ function onScanSuccess(decodedText) {
   stopScannerAndShowResult(decodedText);
 }
 
-// 3. 결과 표시 및 스캐너 정지
 function stopScannerAndShowResult(code) {
   if (isScanning && html5QrCode) {
     html5QrCode.stop().then(() => {
@@ -250,7 +248,6 @@ function stopScannerAndShowResult(code) {
   }
 }
 
-// 4. 조회 결과 매핑
 function handleResult(code) {
   const cleanCode = String(code).trim();
   const item = skuMap[cleanCode];
@@ -260,8 +257,8 @@ function handleResult(code) {
   if (item) {
     els.name.innerText = item[0];
     els.code.innerText = item[1];
-    els.jibun.innerText = item[2];
-    els.zone.innerText = item[3];
+    els.zone.innerText = item[3]; // 존 표시
+    
     els.name.style.color = "#333";
     if(navigator.vibrate) navigator.vibrate(100);
   } else {
@@ -270,7 +267,6 @@ function handleResult(code) {
     if(navigator.vibrate) navigator.vibrate([100,50,100]);
   }
   
-  // 전송 버튼 없이 바로 '다음 스캔' 버튼 표시
   els.nextBtn.style.display = "block";
 }
 
@@ -279,20 +275,13 @@ function resetUI() {
   els.name.innerText = "-";
   els.name.style.color = "#ccc";
   els.code.innerText = "-";
-  els.jibun.innerText = "-";
   els.zone.innerText = "-";
 }
 
-// ==========================================
-// 버튼 동작
-// ==========================================
-
-// [다음 스캔] 버튼 (전송 기능 없음, 단순히 리셋)
 els.nextBtn.addEventListener("click", () => {
   startScanner();
 });
 
-// 수기 조회 버튼
 els.manualBtn.addEventListener("click", () => {
   const code = els.manualInput.value.trim();
   if(!code) return alert("코드를 입력해주세요");
