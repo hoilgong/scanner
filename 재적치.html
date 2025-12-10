@@ -11,33 +11,48 @@
   :root { --kurly-purple: #5f0080; --kurly-orange: #ff6b00; --bg-gray: #f4f4f4; --text-black: #333; }
   * { box-sizing: border-box; }
   body { height: 100vh; margin: 0; padding: 10px; overflow: hidden; font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-gray); display: flex; flex-direction: column; align-items: center; }
+  
+  /* 헤더 & 상태 */
   .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-shrink: 0; }
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
   .status-btn { font-size: 12px; background: white; padding: 6px 12px; border-radius: 20px; color: #555; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; display: flex; align-items: center; gap: 5px; border: 1px solid transparent; }
   #worker-display { width: 100%; max-width: 400px; text-align: right; font-size: 12px; color: #666; margin-bottom: 5px; font-weight: 500; flex-shrink: 0; }
+  
+  /* 단계 표시바 */
   #step-bar { width: 100%; max-width: 400px; display: flex; margin-bottom: 10px; flex-shrink: 0; background: #ddd; border-radius: 20px; overflow: hidden; }
   .step { flex: 1; text-align: center; padding: 8px 0; font-size: 13px; font-weight: bold; color: #999; }
   .step.active { background: var(--kurly-purple); color: white; }
   .step.active-2 { background: var(--kurly-orange); color: white; }
+  
+  /* 스캐너 */
   #reader { width: 100%; max-width: 400px; height: 250px; background: black; border-radius: 8px; overflow: hidden; margin-bottom: 10px; border: 4px solid var(--kurly-purple); transition: border-color 0.3s; position: relative; flex-shrink: 0; display: flex; justify-content: center; align-items: center; }
   #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
   #reader__scan_region { background: rgba(0,0,0,0.6) !important; }
   #reader__dashboard_section_csr button { display: none !important; }
+  
   #guide-msg { width: 100%; max-width: 400px; text-align: center; font-size: 18px; font-weight: 800; margin-bottom: 10px; color: var(--kurly-purple); flex-shrink: 0; }
+  
+  /* 🔥 수기 입력 (위치: 카메라 바로 아래) */
   #manual-box { width: 100%; max-width: 400px; display: flex; gap: 5px; margin-bottom: 10px; flex-shrink: 0; }
-  #manual-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
-  #manual-btn { background: #555; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; }
+  #manual-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; outline: none; }
+  #manual-input:focus { border-color: var(--kurly-purple); }
+  #manual-btn { background: #555; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+  
+  /* 정보 카드 */
   #info-card { flex-grow: 1; width: 100%; max-width: 400px; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: start; overflow-y: auto; }
   .row { margin-bottom: 15px; }
   .label { font-size: 12px; color: #888; margin-bottom: 4px; }
   .val { font-size: 16px; font-weight: 600; color: #333; }
   .target-box { background: #fff4e6; padding: 15px; border-radius: 8px; border: 2px solid var(--kurly-orange); text-align: center; display: none; }
   .target-val { font-size: 32px; font-weight: 900; color: var(--kurly-orange); }
+  
+  /* 팝업 공통 */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: center; }
   .modal-box { background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
   .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; }
   .modal-input { width: 100%; padding: 10px; font-size: 20px; text-align: center; border: 2px solid var(--kurly-purple); border-radius: 8px; margin-bottom: 20px; font-weight: bold; color: var(--text-black); }
   .modal-btn { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; background: var(--kurly-purple); color: white; border: none; border-radius: 8px; cursor: pointer; }
+  
   #msg-overlay { z-index: 2001; color: white; pointer-events: none; }
   #msg-icon { font-size: 60px; margin-bottom: 20px; }
   #msg-text { font-size: 24px; font-weight: bold; }
@@ -175,11 +190,10 @@ async function startScanner() {
         qrbox: { width: 250, height: 150 }, 
         aspectRatio: 1.0,
         videoConstraints: { 
-            facingMode: "environment", // 후면 카메라 강제
-            focusMode: "continuous"    // 연속 초점
+            facingMode: "environment", 
+            focusMode: "continuous" 
         }
     };
-    // facingMode 한번 더 명시 (안전장치)
     await html5QrCode.start({ facingMode: "environment" }, config, onScan);
   } catch(e) { console.error(e); }
 }
@@ -267,7 +281,7 @@ function setStep(step) {
     els.guide.innerText = "상품 바코드를 스캔하세요";
     els.guide.style.color = "#5f0080";
     els.targetArea.style.display = "none";
-    els.manualBox.style.display = "flex"; 
+    els.manualBox.style.display = "flex"; // 1단계: 수기 입력 보임
   } else {
     els.step1.classList.remove("active");
     els.step2.classList.add("active-2");
@@ -275,7 +289,7 @@ function setStep(step) {
     els.guide.innerText = "지번 바코드를 스캔하세요";
     els.guide.style.color = "#ff6b00";
     els.targetArea.style.display = "block";
-    els.manualBox.style.display = "none"; 
+    els.manualBox.style.display = "none"; // 2단계: 수기 입력 숨김 (어뷰징 방지)
   }
 }
 
@@ -301,8 +315,6 @@ els.workerInput.addEventListener("keypress", (e) => { if(e.key === "Enter") conf
 els.refreshBtn.addEventListener("click", () => { if(confirm("데이터를 새로고침 하시겠습니까?")) loadData(); });
 
 function playSound(type) { if(navigator.vibrate) { if(type === "success") navigator.vibrate(100); else navigator.vibrate([200, 100, 200]); } }
-
-loadData();
 </script>
 </body>
 </html>
