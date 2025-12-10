@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kurly Scanner Pro</title>
+<title>Kurly Simple Scanner</title>
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
@@ -52,7 +52,7 @@
   #reader__dashboard_section_csr button { display: none !important; } 
   #reader video { object-fit: cover; }
 
-  /* 🔥 수기 입력 영역 (새로 추가됨) */
+  /* 수기 입력 영역 */
   #manual-box {
     width: 100%; max-width: 400px;
     display: flex; gap: 8px; margin-bottom: 10px; flex-shrink: 0;
@@ -63,7 +63,7 @@
   }
   #manual-input:focus { border-color: var(--kurly-purple); }
   #manual-btn {
-    background: var(--kurly-purple); color: white; border: none;
+    background: #555; color: white; border: none;
     padding: 0 20px; border-radius: 6px; font-weight: bold; cursor: pointer;
   }
 
@@ -90,23 +90,18 @@
   .value-jibun { font-size: 26px; font-weight: 800; color: #333; letter-spacing: -0.5px; }
   .value-zone { font-size: 32px; font-weight: 900; color: var(--kurly-purple); }
 
-  /* 하단 버튼 그룹 */
-  #btn-group {
+  /* 다음 스캔 버튼 (하나로 통일) */
+  #next-btn {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
     width: 90%; max-width: 400px;
-    display: flex; gap: 10px;
-    z-index: 100; display: none;
-  }
-
-  .action-btn {
-    flex: 1; padding: 16px; 
-    border: none; border-radius: 8px; 
+    padding: 16px; border: none; border-radius: 8px;
+    background: var(--kurly-purple); color: white;
     font-size: 16px; font-weight: 700; cursor: pointer;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    display: none; /* 초기엔 숨김 */
+    z-index: 100;
   }
-  #rescan-btn { background: white; color: #555; border: 1px solid #ddd; }
-  #send-btn { background: var(--kurly-purple); color: white; }
-  #send-btn:disabled { background: #ccc; cursor: not-allowed; }
+  #next-btn:active { transform: translateX(-50%) scale(0.98); background: #4a0063; }
 
   /* 로딩 */
   #loading {
@@ -128,7 +123,7 @@
 </div>
 
 <div class="header">
-  <div class="logo">Kurly Work</div>
+  <div class="logo">Kurly Simple</div>
   <div class="status" id="status-txt">대기 중</div>
 </div>
 
@@ -166,21 +161,17 @@
   </div>
 </div>
 
-<div id="btn-group">
-  <button id="rescan-btn" class="action-btn">재스캔</button>
-  <button id="send-btn" class="action-btn">전송</button>
-</div>
+<button id="next-btn">다음 스캔</button>
 
 <script>
 // ============================================================
-// 👇 배포된 GAS ID 적용됨
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzANCvWhDrPk_4Blx7jkIVo4_dSnkHOKbTJ17fdmHtdi8GmTcKCJYuHlB8QfuRf-pqG/exec";
+// 👇 배포된 GAS ID (그대로 유지)
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxlnPMPZAWhPum7f-yl3EVVn_wFqrh_v0GB6Edncx20eglrylv0iDbdET7o_jaPfj3e/exec";
 // ============================================================
 
 let skuMap = {};
 let html5QrCode = null;
 let isScanning = false;
-let currentItem = null;
 
 const els = {
   scan: document.getElementById("val-scan"),
@@ -191,16 +182,14 @@ const els = {
   status: document.getElementById("status-txt"),
   loading: document.getElementById("loading"),
   loadingTxt: document.getElementById("loading-txt"),
-  btnGroup: document.getElementById("btn-group"),
-  rescanBtn: document.getElementById("rescan-btn"),
-  sendBtn: document.getElementById("send-btn"),
+  nextBtn: document.getElementById("next-btn"),
   
-  // 수기 입력 관련 요소
+  // 수기 입력 관련
   manualInput: document.getElementById("manual-input"),
   manualBtn: document.getElementById("manual-btn")
 };
 
-// 1. 데이터 가져오기
+// 1. 데이터 가져오기 (조회용 데이터만 로드)
 async function fetchData(isBg) {
   if(!isBg) { els.loading.style.display = 'flex'; els.loadingTxt.innerText = "데이터 동기화 중..."; }
   try {
@@ -219,10 +208,9 @@ async function fetchData(isBg) {
 // 2. 스캐너 시작
 async function startScanner() {
   if(isScanning) return;
-  els.btnGroup.style.display = "none";
+  els.nextBtn.style.display = "none";
   resetUI();
-  currentItem = null;
-  els.manualInput.value = ""; // 입력창 초기화
+  els.manualInput.value = ""; 
 
   if (!html5QrCode) {
     html5QrCode = new Html5Qrcode("reader");
@@ -239,7 +227,6 @@ async function startScanner() {
     await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
   } catch (err) {
     isScanning = false;
-    // 카메라 실패해도 수기 입력은 되게 함
     console.error(err);
   }
 }
@@ -248,7 +235,7 @@ function onScanSuccess(decodedText) {
   stopScannerAndShowResult(decodedText);
 }
 
-// 3. 스캐너 멈추고 결과 표시 (스캔 or 수기입력 공용)
+// 3. 결과 표시 및 스캐너 정지
 function stopScannerAndShowResult(code) {
   if (isScanning && html5QrCode) {
     html5QrCode.stop().then(() => {
@@ -263,7 +250,7 @@ function stopScannerAndShowResult(code) {
   }
 }
 
-// 4. 결과 처리 로직
+// 4. 조회 결과 매핑
 function handleResult(code) {
   const cleanCode = String(code).trim();
   const item = skuMap[cleanCode];
@@ -271,29 +258,20 @@ function handleResult(code) {
   els.scan.innerText = cleanCode;
 
   if (item) {
-    currentItem = {
-      scanCode: cleanCode,
-      prodName: item[0],
-      prodCode: item[1],
-      jibun: item[2],
-      zone: item[3]
-    };
     els.name.innerText = item[0];
     els.code.innerText = item[1];
     els.jibun.innerText = item[2];
     els.zone.innerText = item[3];
     els.name.style.color = "#333";
-    els.sendBtn.disabled = false;
     if(navigator.vibrate) navigator.vibrate(100);
   } else {
-    currentItem = null; 
     els.name.innerText = "미등록 상품";
     els.name.style.color = "red";
-    els.sendBtn.disabled = true; 
     if(navigator.vibrate) navigator.vibrate([100,50,100]);
   }
   
-  els.btnGroup.style.display = "flex";
+  // 전송 버튼 없이 바로 '다음 스캔' 버튼 표시
+  els.nextBtn.style.display = "block";
 }
 
 function resetUI() {
@@ -306,46 +284,21 @@ function resetUI() {
 }
 
 // ==========================================
-// 5. 이벤트 리스너 (버튼 동작)
+// 버튼 동작
 // ==========================================
 
-// (1) 재스캔
-els.rescanBtn.addEventListener("click", () => {
+// [다음 스캔] 버튼 (전송 기능 없음, 단순히 리셋)
+els.nextBtn.addEventListener("click", () => {
   startScanner();
 });
 
-// (2) 전송 (저장)
-els.sendBtn.addEventListener("click", async () => {
-  if (!currentItem) return alert("전송할 데이터가 없습니다.");
-  
-  els.loading.style.display = 'flex';
-  els.loadingTxt.innerText = "전송 중...";
-
-  try {
-    await fetch(GAS_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify(currentItem)
-    });
-    els.loading.style.display = 'none';
-    if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
-    alert("✅ 저장 완료!");
-    startScanner();
-  } catch (err) {
-    els.loading.style.display = 'none';
-    alert("전송 실패: " + err.message);
-  }
-});
-
-// (3) 🔥 수기 조회 버튼
+// 수기 조회 버튼
 els.manualBtn.addEventListener("click", () => {
   const code = els.manualInput.value.trim();
   if(!code) return alert("코드를 입력해주세요");
   stopScannerAndShowResult(code);
 });
 
-// (4) 수기 입력창에서 엔터키
 els.manualInput.addEventListener("keypress", (e) => {
   if(e.key === "Enter") els.manualBtn.click();
 });
