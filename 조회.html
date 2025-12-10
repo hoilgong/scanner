@@ -81,7 +81,7 @@
 <button id="next-btn">다음 스캔</button>
 
 <script>
-// 배포 ID (조회용)
+// 배포된 GAS ID (조회용 유지)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxlnPMPZAWhPum7f-yl3EVVn_wFqrh_v0GB6Edncx20eglrylv0iDbdET7o_jaPfj3e/exec";
 
 let skuMap = {};
@@ -127,14 +127,18 @@ async function startScanner() {
     html5QrCode = new Html5Qrcode("reader");
   }
 
-  // 🔥 후면 카메라 + 연속 초점 고정
+  // 🔥 [오토포커스 강력 설정]
+  // 1. facingMode: "environment" (후면 카메라 고정)
+  // 2. focusMode: "continuous" (표준 연속 초점)
+  // 3. advanced: [{ focusMode: "continuous" }] (강제 연속 초점)
   const config = { 
     fps: 10,
     qrbox: { width: 250, height: 150 },
     aspectRatio: 1.0,
     videoConstraints: { 
         facingMode: "environment", 
-        focusMode: "continuous"
+        focusMode: "continuous",
+        advanced: [{ focusMode: "continuous" }]
     }
   };
 
@@ -144,6 +148,7 @@ async function startScanner() {
   } catch (err) {
     isScanning = false;
     console.error(err);
+    alert("카메라 실행 실패. 권한을 확인해주세요.");
   }
 }
 
