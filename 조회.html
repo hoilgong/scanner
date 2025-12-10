@@ -8,124 +8,33 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
 <style>
-  :root {
-    --kurly-purple: #5f0080;
-    --bg-gray: #f4f4f4;
-    --text-black: #333;
-    --text-gray: #888;
-    --border-color: #eee;
-  }
-
+  :root { --kurly-purple: #5f0080; --bg-gray: #f4f4f4; --text-black: #333; --text-gray: #888; --border-color: #eee; }
   * { box-sizing: border-box; }
-  
-  html, body { 
-    height: 100%; margin: 0; padding: 0; 
-    overflow: hidden; 
-    font-family: 'Noto Sans KR', sans-serif;
-    background-color: var(--bg-gray);
-  }
-
-  body {
-    display: flex; flex-direction: column; align-items: center;
-    padding: 10px; position: relative;
-  }
-
-  /* 헤더 */
-  .header {
-    width: 100%; max-width: 400px;
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 5px; flex-shrink: 0;
-  }
+  html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-gray); }
+  body { display: flex; flex-direction: column; align-items: center; padding: 10px; position: relative; }
+  .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-shrink: 0; }
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
-  
-  /* 🔥 새로고침 버튼 스타일 (추가됨) */
-  .status-btn { 
-    font-size: 12px; background: white; padding: 6px 12px; 
-    border-radius: 20px; color: #555; font-weight: bold;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer;
-    display: flex; align-items: center; gap: 5px; border: 1px solid transparent;
-  }
+  .status-btn { font-size: 12px; background: white; padding: 6px 12px; border-radius: 20px; color: #555; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; display: flex; align-items: center; gap: 5px; border: 1px solid transparent; }
   .status-btn:active { transform: scale(0.95); background: #eee; }
-
-  /* 스캐너 */
-  #reader {
-    width: 100%; max-width: 400px;
-    height: 220px; 
-    background: black; border-radius: 8px; overflow: hidden;
-    margin-bottom: 10px; flex-shrink: 0;
-    position: relative;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  }
+  #reader { width: 100%; max-width: 400px; height: 220px; background: black; border-radius: 8px; overflow: hidden; margin-bottom: 10px; flex-shrink: 0; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
   #reader__scan_region { background: rgba(0, 0, 0, 0.6) !important; }
   #reader__dashboard_section_csr button { display: none !important; } 
   #reader video { object-fit: cover; }
-
-  /* 수기 입력 영역 */
-  #manual-box {
-    width: 100%; max-width: 400px;
-    display: flex; gap: 8px; margin-bottom: 10px; flex-shrink: 0;
-  }
-  #manual-input {
-    flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px;
-    font-size: 16px; outline: none;
-  }
+  #manual-box { width: 100%; max-width: 400px; display: flex; gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
+  #manual-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; outline: none; }
   #manual-input:focus { border-color: var(--kurly-purple); }
-  #manual-btn {
-    background: #555; color: white; border: none;
-    padding: 0 20px; border-radius: 6px; font-weight: bold; cursor: pointer;
-  }
-
-  /* 결과 리스트 */
-  #result-wrapper {
-    flex-grow: 1; width: 100%; max-width: 400px;
-    background: white; border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    overflow-y: auto;
-    padding: 15px 20px; 
-  }
-
-  .info-row {
-    display: flex; flex-direction: column;
-    border-bottom: 1px solid var(--border-color);
-    padding: 8px 0;
-  }
+  #manual-btn { background: #555; color: white; border: none; padding: 0 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+  #result-wrapper { flex-grow: 1; width: 100%; max-width: 400px; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow-y: auto; padding: 15px 20px; }
+  .info-row { display: flex; flex-direction: column; border-bottom: 1px solid var(--border-color); padding: 8px 0; }
   .info-row:last-child { border-bottom: none; }
-
   .label { font-size: 12px; color: var(--text-gray); margin-bottom: 2px; }
   .value { font-size: 16px; color: var(--text-black); font-weight: 500; word-break: break-all; }
-  
   .value-name { font-size: 18px; font-weight: 700; color: var(--text-black); line-height: 1.3; }
-  
-  /* 존(Zone) 강조 */
-  .value-zone { 
-    font-size: 40px; 
-    font-weight: 900; 
-    color: var(--kurly-purple); 
-    line-height: 1.1;
-  }
-
-  /* 다음 스캔 버튼 */
-  #next-btn {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    width: 90%; max-width: 400px;
-    padding: 16px; border: none; border-radius: 8px;
-    background: var(--kurly-purple); color: white;
-    font-size: 18px; font-weight: 800; cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    display: none; 
-    z-index: 100;
-  }
+  .value-zone { font-size: 40px; font-weight: 900; color: var(--kurly-purple); line-height: 1.1; }
+  #next-btn { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; padding: 16px; border: none; border-radius: 8px; background: var(--kurly-purple); color: white; font-size: 18px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: none; z-index: 100; }
   #next-btn:active { transform: translateX(-50%) scale(0.98); background: #4a0063; }
-
-  /* 로딩 */
-  #loading {
-    position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 999;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-  }
-  .spinner {
-    width: 30px; height: 30px; border: 3px solid #ddd; border-top-color: var(--kurly-purple);
-    border-radius: 50%; animation: spin 1s infinite linear;
-  }
+  #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+  .spinner { width: 30px; height: 30px; border: 3px solid #ddd; border-top-color: var(--kurly-purple); border-radius: 50%; animation: spin 1s infinite linear; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
@@ -155,17 +64,14 @@
     <div class="label">대체코드 (스캔값)</div>
     <div class="value" id="val-scan">스캔 대기 중...</div>
   </div>
-  
   <div class="info-row">
     <div class="label">상품명</div>
     <div class="value value-name" id="val-name">-</div>
   </div>
-  
   <div class="info-row">
     <div class="label">상품코드</div>
     <div class="value" id="val-code">-</div>
   </div>
-  
   <div class="info-row" style="border-bottom:none; padding-top:15px;">
     <div class="label">ZONE (구역)</div>
     <div class="value value-zone" id="val-zone">-</div>
@@ -175,10 +81,8 @@
 <button id="next-btn">다음 스캔</button>
 
 <script>
-// ============================================================
-// 👇 배포된 GAS ID (조회용 ID 유지)
+// 배포 ID (조회용)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxlnPMPZAWhPum7f-yl3EVVn_wFqrh_v0GB6Edncx20eglrylv0iDbdET7o_jaPfj3e/exec";
-// ============================================================
 
 let skuMap = {};
 let html5QrCode = null;
@@ -193,13 +97,11 @@ const els = {
   loading: document.getElementById("loading"),
   loadingTxt: document.getElementById("loading-txt"),
   nextBtn: document.getElementById("next-btn"),
-  
   manualInput: document.getElementById("manual-input"),
   manualBtn: document.getElementById("manual-btn"),
-  refreshBtn: document.getElementById("refresh-btn") // 새로고침 버튼
+  refreshBtn: document.getElementById("refresh-btn")
 };
 
-// 1. 데이터 가져오기
 async function fetchData(isBg) {
   if(!isBg) { els.loading.style.display = 'flex'; els.loadingTxt.innerText = "데이터 동기화 중..."; }
   try {
@@ -215,7 +117,6 @@ async function fetchData(isBg) {
   }
 }
 
-// 2. 스캐너 시작 (연속 초점 적용)
 async function startScanner() {
   if(isScanning) return;
   els.nextBtn.style.display = "none";
@@ -226,11 +127,15 @@ async function startScanner() {
     html5QrCode = new Html5Qrcode("reader");
   }
 
+  // 🔥 후면 카메라 + 연속 초점 고정
   const config = { 
     fps: 10,
     qrbox: { width: 250, height: 150 },
     aspectRatio: 1.0,
-    videoConstraints: { focusMode: "continuous" }
+    videoConstraints: { 
+        facingMode: "environment", 
+        focusMode: "continuous"
+    }
   };
 
   try {
@@ -242,9 +147,7 @@ async function startScanner() {
   }
 }
 
-function onScanSuccess(decodedText) {
-  stopScannerAndShowResult(decodedText);
-}
+function onScanSuccess(decodedText) { stopScannerAndShowResult(decodedText); }
 
 function stopScannerAndShowResult(code) {
   if (isScanning && html5QrCode) {
@@ -263,7 +166,6 @@ function stopScannerAndShowResult(code) {
 function handleResult(code) {
   const cleanCode = String(code).trim();
   const item = skuMap[cleanCode];
-
   els.scan.innerText = cleanCode;
 
   if (item) {
@@ -289,26 +191,14 @@ function resetUI() {
   els.zone.innerText = "-";
 }
 
-els.nextBtn.addEventListener("click", () => {
-  startScanner();
-});
-
+els.nextBtn.addEventListener("click", () => { startScanner(); });
 els.manualBtn.addEventListener("click", () => {
   const code = els.manualInput.value.trim();
   if(!code) return alert("코드를 입력해주세요");
   stopScannerAndShowResult(code);
 });
-
-els.manualInput.addEventListener("keypress", (e) => {
-  if(e.key === "Enter") els.manualBtn.click();
-});
-
-// 🔥 새로고침 버튼 이벤트
-els.refreshBtn.addEventListener("click", () => {
-  if(confirm("데이터를 새로고침 하시겠습니까?")) {
-    fetchData(false); // 수동 새로고침
-  }
-});
+els.manualInput.addEventListener("keypress", (e) => { if(e.key === "Enter") els.manualBtn.click(); });
+els.refreshBtn.addEventListener("click", () => { if(confirm("데이터를 새로고침 하시겠습니까?")) fetchData(false); });
 
 fetchData(false);
 setInterval(() => fetchData(true), 300000); 
