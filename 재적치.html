@@ -3,92 +3,107 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kurly Relocation Final</title>
+<title>Kurly Relocation Fixed</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
 <style>
   :root { --kurly-purple: #5f0080; --kurly-orange: #ff6b00; --bg-gray: #f4f4f4; --text-black: #333; }
   * { box-sizing: border-box; }
   
+  /* 화면 여백을 5px로 줄여서 공간 확보 */
   body { 
-    height: 100vh; margin: 0; padding: 10px; overflow: hidden; 
+    height: 100vh; margin: 0; padding: 5px; overflow: hidden; 
     font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-gray); 
     display: flex; flex-direction: column; 
   }
 
-  /* === 1. 상단 영역 (Step 2에서는 숨길 예정) === */
+  /* === 1. 상단 영역 === */
   .top-section { 
     width: 100%; flex-shrink: 0; display: flex; flex-direction: column; gap: 5px; 
     transition: opacity 0.2s;
   }
 
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-  .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
-  .status-btn { font-size: 12px; background: white; padding: 6px 12px; border-radius: 20px; color: #555; font-weight: bold; border: 1px solid #ddd; cursor: pointer;}
+  /* 헤더: 컴팩트하게 수정 */
+  .header { 
+    display: flex; justify-content: space-between; align-items: center; 
+    margin-bottom: 2px; height: 36px; /* 높이 고정 */
+  }
+  .logo { 
+    color: var(--kurly-purple); font-weight: 800; font-size: 16px; /* 폰트 줄임 */
+    white-space: nowrap; 
+  }
+  .status-btn { 
+    font-size: 11px; background: white; padding: 4px 10px; /* 패딩 줄임 */
+    border-radius: 20px; color: #555; font-weight: bold; border: 1px solid #ddd; 
+    cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  }
   
   #step-bar { display: flex; background: #ddd; border-radius: 8px; overflow: hidden; margin-bottom: 5px; }
-  .step { flex: 1; text-align: center; padding: 8px 0; font-size: 13px; font-weight: bold; color: #999; }
+  .step { flex: 1; text-align: center; padding: 6px 0; font-size: 12px; font-weight: bold; color: #999; }
   .step.active { background: var(--kurly-purple); color: white; }
   
-  /* 상품 정보 카드 */
-  .info-card { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); min-height: 80px;}
-  .label { font-size: 12px; color: #888; margin-bottom: 5px; }
-  .val { font-size: 18px; font-weight: 700; color: #333; word-break: break-all; line-height: 1.3; }
+  .info-card { background: white; border-radius: 10px; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); min-height: 70px;}
+  .label { font-size: 11px; color: #888; margin-bottom: 3px; }
+  .val { font-size: 17px; font-weight: 700; color: #333; word-break: break-all; line-height: 1.3; }
 
-  /* === 빈 여백 (화면 밀어내기용) === */
+  /* === 빈 여백 === */
   .spacer { flex-grow: 1; }
 
   /* === 2. 하단 영역 (핵심) === */
-  .bottom-section { width: 100%; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: 5px; }
+  .bottom-section { width: 100%; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding-bottom: 0px; }
 
-  /* 목표 지번 표시 (평소엔 숨김 -> Step 2에서만 등장) */
   #target-area { 
     display: none; 
     flex-direction: column; justify-content: center; align-items: center;
     background: #fff4e6; border: 4px solid var(--kurly-orange); 
     border-radius: 12px; text-align: center;
-    flex-grow: 1; /* 남은 공간 모두 차지 */
-    min-height: 200px; /* 최소 높이 확보 */
-    margin-bottom: 10px;
+    flex-grow: 1; 
+    min-height: 200px; 
+    margin-bottom: 5px;
+    overflow: hidden; /* 넘치는 것 방지 */
   }
-  .target-label { color: #d9480f; font-size: 16px; font-weight: bold; margin-bottom: 10px; }
-  /* 지번 텍스트 아주 크게 */
-  .target-val { font-size: 50px; font-weight: 900; color: var(--kurly-orange); line-height: 1.1; word-break: break-all; padding: 0 10px;}
+  .target-label { color: #d9480f; font-size: 14px; font-weight: bold; margin-bottom: 5px; }
+  
+  /* 지번 텍스트: 절대 줄바꿈 안되게 설정 */
+  .target-val { 
+    font-size: 13vw; /* 화면 너비의 13% 크기로 자동 조절 (320px 기준 약 41px) */
+    font-weight: 900; 
+    color: var(--kurly-orange); 
+    line-height: 1.1; 
+    white-space: nowrap; /* ★ 줄바꿈 방지 */
+    padding: 0 5px;
+  }
 
-  /* 안내 문구 (Step 1용) */
-  #guide-msg { text-align: center; font-size: 16px; font-weight: 800; color: var(--kurly-purple); margin-bottom: 5px;}
+  #guide-msg { text-align: center; font-size: 15px; font-weight: 800; color: var(--kurly-purple); margin-bottom: 2px;}
 
-  /* 입력창 (순정 상태) */
   #scan-input { 
-    width: 100%; height: 50px; font-size: 20px; border: 2px solid var(--kurly-purple); 
+    width: 100%; height: 48px; font-size: 18px; border: 2px solid var(--kurly-purple); 
     border-radius: 8px; text-align: center; font-weight: bold; outline: none;
     background: white;
   }
   #scan-input:focus { border-color: var(--kurly-purple); box-shadow: 0 0 10px rgba(95,0,128,0.3); }
 
-  /* === 모달/팝업 === */
-  /* 배경을 #f4f4f4(회색) 불투명으로 처리 -> 뒤에 있는 글씨 안보이게 함 */
+  /* === 모달 === */
   .modal-overlay { 
     position: fixed; inset: 0; background: #f4f4f4; 
     z-index: 2000; display: none; justify-content: center; align-items: center; 
   }
-  .modal-box { background: white; width: 90%; max-width: 320px; padding: 30px 20px; border-radius: 12px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border: 1px solid #ddd; }
-  .modal-title { font-size: 20px; font-weight: bold; margin-bottom: 20px; color: #333; }
-  .modal-input { width: 100%; padding: 15px; font-size: 28px; text-align: center; border: 2px solid var(--kurly-purple); border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
-  .modal-btn { width: 100%; padding: 15px; font-size: 18px; font-weight: bold; background: var(--kurly-purple); color: white; border: none; border-radius: 8px; }
+  .modal-box { background: white; width: 90%; max-width: 320px; padding: 25px 20px; border-radius: 12px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+  .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; }
+  .modal-input { width: 100%; padding: 12px; font-size: 24px; text-align: center; border: 2px solid var(--kurly-purple); border-radius: 8px; margin-bottom: 15px; font-weight: bold; }
+  .modal-btn { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; background: var(--kurly-purple); color: white; border: none; border-radius: 8px; }
   
   #msg-overlay { z-index: 2001; color: white; pointer-events: none; flex-direction: column; background: rgba(0,0,0,0.7); }
   #loading { position: fixed; inset: 0; background: rgba(255,255,255,1); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; }
 
-  /* ★★★ Step 2 (지번 스캔 모드) CSS ★★★ */
-  /* body에 step2-mode 클래스가 붙으면 발동 */
-  body.step2-mode .top-section { display: none !important; } /* 상단 정보 숨김 */
-  body.step2-mode .spacer { display: none !important; } /* 여백 숨김 */
-  body.step2-mode #guide-msg { display: none !important; } /* 작은 안내 문구 숨김 */
+  /* ★★★ Step 2 모드 ★★★ */
+  body.step2-mode .top-section { display: none !important; } 
+  body.step2-mode .spacer { display: none !important; } 
+  body.step2-mode #guide-msg { display: none !important; } 
   
-  body.step2-mode { justify-content: flex-end; } /* 아래쪽으로 정렬 */
-  body.step2-mode #target-area { display: flex !important; height: 60vh; } /* 지번 박스 활성화 & 화면 60% 차지 */
-  body.step2-mode #scan-input { border-color: var(--kurly-orange); } /* 테두리 주황색 */
+  body.step2-mode { justify-content: flex-end; } 
+  body.step2-mode #target-area { display: flex !important; height: 60vh; } 
+  body.step2-mode #scan-input { border-color: var(--kurly-orange); } 
   
 </style>
 </head>
@@ -96,7 +111,7 @@
 
 <div id="login-modal" class="modal-overlay" style="display: flex;">
   <div class="modal-box">
-    <div class="logo" style="margin-bottom: 20px;">Kurly Work</div>
+    <div class="logo" style="margin-bottom: 15px; font-size: 20px;">Kurly Work</div>
     <div class="modal-title">작업자 이름</div>
     <input type="text" id="worker-input" class="modal-input" placeholder="이름 입력">
     <button class="modal-btn" onclick="confirmWorker()">시작하기</button>
@@ -120,14 +135,13 @@
   <p style="color:#5f0080; font-weight:bold;">데이터 동기화 중...</p>
 </div>
 
-
 <div class="top-section">
   <div class="header">
     <div class="logo">재적치 PDA</div>
-    <div id="refresh-btn" class="status-btn"><span id="db-status">대기</span> 🔄</div>
+    <div id="refresh-btn" class="status-btn"><span id="db-status">대기</span> ↻</div>
   </div>
 
-  <div id="worker-display" style="text-align:right; font-size:12px; color:#666; margin-bottom:5px;"></div>
+  <div id="worker-display" style="text-align:right; font-size:11px; color:#666; margin-bottom:5px;"></div>
 
   <div id="step-bar">
     <div id="step1" class="step active">1. 상품</div>
@@ -143,15 +157,14 @@
 <div class="spacer"></div>
 
 <div class="bottom-section">
-  
   <div id="target-area">
-    <div class="target-label">⬇️ 여기로 이동하세요</div>
+    <div class="target-label">⬇️ 여기로 이동</div>
     <div class="target-val" id="p-jibun">-</div>
   </div>
 
   <div id="guide-msg">상품 바코드를 스캔하세요</div>
 
-  <input type="text" id="scan-input" placeholder="스캔 또는 입력" autocomplete="off">
+  <input type="text" id="scan-input" placeholder="스캔" autocomplete="off">
 </div>
 
 <script>
@@ -170,15 +183,12 @@ const els = {
   guide: document.getElementById("guide-msg"),
   step1: document.getElementById("step1"),
   step2: document.getElementById("step2"),
-  
   loginModal: document.getElementById("login-modal"),
   workerInput: document.getElementById("worker-input"),
   workerDisplay: document.getElementById("worker-display"),
-  
   qtyModal: document.getElementById("qty-modal"),
   qtyInput: document.getElementById("qty-input"),
   qtyTitle: document.getElementById("qty-title"),
-  
   msgOverlay: document.getElementById("msg-overlay"),
   msgIcon: document.getElementById("msg-icon"),
   msgText: document.getElementById("msg-text"),
@@ -186,8 +196,6 @@ const els = {
   dbStatus: document.getElementById("db-status"),
   refreshBtn: document.getElementById("refresh-btn")
 };
-
-// --- 기능 로직 ---
 
 function confirmWorker() {
   const name = els.workerInput.value.trim();
@@ -216,10 +224,8 @@ async function loadData() {
 function handleInput(val) {
   const code = String(val).trim();
   if(!code) return;
-  
   if(currentStep === 1) handleProduct(code);
   else handleLocation(code);
-  
   els.scanInput.value = "";
 }
 
@@ -237,7 +243,6 @@ function openQty() {
   els.qtyTitle.innerHTML = `<span style="font-size:16px; color:#555">${currentProduct.name}</span><br>수량 입력`;
   els.qtyInput.value = "1";
   els.qtyModal.style.display = "flex";
-  // 모달이 뜰 때 배경이 불투명하므로 뒤에 글씨 안 보임
   setTimeout(()=> els.qtyInput.focus(), 100);
 }
 
@@ -276,25 +281,17 @@ function saveLog(loc) {
 function setStep(step) {
   currentStep = step;
   els.scanInput.value = "";
-  
   if(step === 1) {
-    // Step 1 모드: body에서 클래스 제거 (상단 정보 보임)
     document.body.classList.remove("step2-mode");
-    
     els.step1.classList.add("active");
     els.guide.innerText = "상품 바코드를 스캔하세요";
     els.scanInput.style.borderColor = "#5f0080";
-    
   } else {
-    // Step 2 모드: body에 클래스 추가 (CSS로 상단 정보 숨기고 지번만 남김)
     document.body.classList.add("step2-mode");
-    
     els.step1.classList.remove("active");
     els.pJibun.innerText = currentProduct.jibun;
     els.scanInput.style.borderColor = "#ff6b00";
   }
-  
-  // 포커스 유지
   setTimeout(() => els.scanInput.focus(), 100);
 }
 
@@ -313,15 +310,11 @@ function showMsg(icon, text, color) {
   els.scanInput.focus();
 }
 
-// 이벤트
-els.scanInput.addEventListener("keypress", e => {
-  if(e.key === "Enter") handleInput(els.scanInput.value);
-});
+els.scanInput.addEventListener("keypress", e => { if(e.key === "Enter") handleInput(els.scanInput.value); });
 els.qtyInput.addEventListener("keypress", e => { if(e.key==="Enter") confirmQty(); });
 els.workerInput.addEventListener("keypress", e => { if(e.key==="Enter") confirmWorker(); });
 els.refreshBtn.onclick = () => { if(confirm("새로고침?")) loadData(); };
 
-// 화면 터치시 포커스 유지
 document.onclick = (e) => {
   if(!e.target.closest("input") && !e.target.closest("button") && els.loginModal.style.display==="none") {
     els.scanInput.focus();
