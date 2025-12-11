@@ -275,7 +275,8 @@
   
   <div id="input-wrapper">
     <div id="guide-msg">상품 바코드를 스캔하세요</div>
-    <input type="text" id="scan-input" placeholder="스캔..." autocomplete="off" inputmode="url">
+    <input type="text" id="scan-input" placeholder="스캔..." autocomplete="off" 
+           autocapitalize="off" autocorrect="off" inputmode="url">
   </div>
 </div>
 
@@ -353,7 +354,9 @@ function handleProductScan(code) {
     openQtyModal(item[0]); 
   } else {
     showMessage("❌", "미등록", "red");
-    setTimeout(() => els.scanInput.focus(), 100);
+    setTimeout(() => {
+        forceEnglishKeyboard(); // 재시도 시에도 영문 키보드 강제
+    }, 100);
   }
 }
 
@@ -394,7 +397,9 @@ function handleLocationScan(scannedJibun) {
     setTimeout(() => { resetToStep1(); }, 1500);
   } else {
     showMessage("⚠️", "불일치", "#ff6b00");
-    setTimeout(() => els.scanInput.focus(), 100);
+    setTimeout(() => {
+        forceEnglishKeyboard(); // 불일치 후 재입력 시 영문 강제
+    }, 100);
   }
 }
 
@@ -406,6 +411,19 @@ function saveLog(scannedLoc) {
       targetJibun: currentProduct.jibun, scannedJibun: scannedLoc, qty: currentProduct.qty 
     })
   });
+}
+
+// [핵심 기능] 영문 키보드 강제 함수 (Password Trick)
+function forceEnglishKeyboard() {
+  // 1. 잠시 비밀번호 필드로 변경 (비밀번호는 OS 레벨에서 영문 자판 강제)
+  els.scanInput.type = "password"; 
+  els.scanInput.focus();
+  els.scanInput.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  // 2. 아주 짧은 시간 뒤 텍스트 필드로 복구 (사용자가 보기에 깜빡임 거의 없음)
+  setTimeout(() => {
+    els.scanInput.type = "text";
+  }, 50);
 }
 
 function setStep(step) {
@@ -422,9 +440,9 @@ function setStep(step) {
     els.scanInput.placeholder = "지번 바코드 스캔";
   }
   
+  // 단계 변경 시 영문 키보드 강제 실행
   setTimeout(() => {
-    els.scanInput.focus();
-    els.scanInput.scrollIntoView({ behavior: "smooth", block: "center" });
+    forceEnglishKeyboard();
   }, 200);
 }
 
@@ -451,7 +469,8 @@ els.refreshBtn.addEventListener("click", () => { if(confirm("DB 갱신?")) loadD
 document.addEventListener("click", (e) => {
   if(!e.target.closest("button") && !e.target.closest("input")) {
     if(els.loginModal.style.display === "none" && els.qtyModal.style.display === "none") {
-      els.scanInput.focus();
+      // 배경 클릭 시에도 영문 키보드 유지하며 포커스
+      forceEnglishKeyboard();
     }
   }
 });
