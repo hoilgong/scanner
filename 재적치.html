@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kurly Relocation Pro</title>
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<title>Kurly Relocation PDA</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
 <style>
@@ -12,39 +11,37 @@
   * { box-sizing: border-box; }
   body { height: 100vh; margin: 0; padding: 10px; overflow: hidden; font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-gray); display: flex; flex-direction: column; align-items: center; }
   
-  /* 헤더 & 상태 */
   .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-shrink: 0; }
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
-  .status-btn { font-size: 12px; background: white; padding: 6px 12px; border-radius: 20px; color: #555; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; display: flex; align-items: center; gap: 5px; border: 1px solid transparent; }
+  .status-btn { font-size: 12px; background: white; padding: 6px 12px; border-radius: 20px; color: #555; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; border: 1px solid #ddd; }
+  
   #worker-display { width: 100%; max-width: 400px; text-align: right; font-size: 12px; color: #666; margin-bottom: 5px; font-weight: 500; flex-shrink: 0; }
   
-  /* 단계 표시바 */
-  #step-bar { width: 100%; max-width: 400px; display: flex; margin-bottom: 10px; flex-shrink: 0; background: #ddd; border-radius: 20px; overflow: hidden; }
-  .step { flex: 1; text-align: center; padding: 8px 0; font-size: 13px; font-weight: bold; color: #999; }
+  /* 단계바 */
+  #step-bar { width: 100%; max-width: 400px; display: flex; margin-bottom: 15px; flex-shrink: 0; background: #ddd; border-radius: 8px; overflow: hidden; }
+  .step { flex: 1; text-align: center; padding: 10px 0; font-size: 14px; font-weight: bold; color: #999; }
   .step.active { background: var(--kurly-purple); color: white; }
   .step.active-2 { background: var(--kurly-orange); color: white; }
   
-  /* 스캐너 */
-  #reader { width: 100%; max-width: 400px; height: 250px; background: black; border-radius: 8px; overflow: hidden; margin-bottom: 10px; border: 4px solid var(--kurly-purple); transition: border-color 0.3s; position: relative; flex-shrink: 0; display: flex; justify-content: center; align-items: center; }
-  #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
-  #reader__scan_region { background: rgba(0,0,0,0.6) !important; }
-  #reader__dashboard_section_csr button { display: none !important; }
+  /* 입력창 (PDA 핵심) */
+  #input-box { width: 100%; max-width: 400px; margin-bottom: 15px; flex-shrink: 0; }
+  #scan-input { 
+    width: 100%; padding: 15px; font-size: 18px; border: 2px solid var(--kurly-purple); 
+    border-radius: 8px; outline: none; text-align: center; font-weight: bold; 
+    background: white; color: #333;
+  }
+  #scan-input:focus { box-shadow: 0 0 8px rgba(95,0,128,0.3); border-color: var(--kurly-purple); }
   
   #guide-msg { width: 100%; max-width: 400px; text-align: center; font-size: 18px; font-weight: 800; margin-bottom: 10px; color: var(--kurly-purple); flex-shrink: 0; }
-  
-  /* 🔥 수기 입력 (위치: 카메라 바로 아래) */
-  #manual-box { width: 100%; max-width: 400px; display: flex; gap: 5px; margin-bottom: 10px; flex-shrink: 0; }
-  #manual-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; outline: none; }
-  #manual-input:focus { border-color: var(--kurly-purple); }
-  #manual-btn { background: #555; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-  
+
   /* 정보 카드 */
   #info-card { flex-grow: 1; width: 100%; max-width: 400px; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: start; overflow-y: auto; }
-  .row { margin-bottom: 15px; }
-  .label { font-size: 12px; color: #888; margin-bottom: 4px; }
-  .val { font-size: 16px; font-weight: 600; color: #333; }
-  .target-box { background: #fff4e6; padding: 15px; border-radius: 8px; border: 2px solid var(--kurly-orange); text-align: center; display: none; }
-  .target-val { font-size: 32px; font-weight: 900; color: var(--kurly-orange); }
+  .row { margin-bottom: 20px; }
+  .label { font-size: 13px; color: #888; margin-bottom: 5px; }
+  .val { font-size: 20px; font-weight: 700; color: #333; word-break: break-all; }
+  
+  .target-box { background: #fff4e6; padding: 15px; border-radius: 8px; border: 2px solid var(--kurly-orange); text-align: center; display: none; margin-top: 10px; }
+  .target-val { font-size: 36px; font-weight: 900; color: var(--kurly-orange); }
   
   /* 팝업 공통 */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: center; }
@@ -63,9 +60,9 @@
 
 <div id="login-modal" class="modal-overlay" style="display: flex;">
   <div class="modal-box">
-    <div class="logo" style="margin-bottom: 20px; color: #5f0080;">Kurly Work</div>
-    <div class="modal-title">작업자 이름을<br>입력해주세요</div>
-    <input type="text" id="worker-input" class="modal-input" placeholder="이름 입력">
+    <div class="logo" style="margin-bottom: 20px; color: #5f0080;">Kurly Work (PDA)</div>
+    <div class="modal-title">작업자 이름 입력</div>
+    <input type="text" id="worker-input" class="modal-input" placeholder="이름">
     <button class="modal-btn" onclick="confirmWorker()">작업 시작</button>
   </div>
 </div>
@@ -88,7 +85,7 @@
 </div>
 
 <div class="header">
-  <div class="logo">재적치 스캐너</div>
+  <div class="logo">재적치 (PDA)</div>
   <div id="refresh-btn" class="status-btn">
     <span id="db-status">대기</span> 🔄
   </div>
@@ -103,11 +100,8 @@
 
 <div id="guide-msg">상품 바코드를 스캔하세요</div>
 
-<div id="reader"></div>
-
-<div id="manual-box">
-  <input type="text" id="m-input" placeholder="바코드 직접 입력">
-  <button id="m-btn">확인</button>
+<div id="input-box">
+  <input type="text" id="scan-input" placeholder="스캔 또는 입력..." autocomplete="off">
 </div>
 
 <div id="info-card">
@@ -115,21 +109,20 @@
     <div class="label">상품명 (수량)</div>
     <div class="val" id="p-name">-</div>
   </div>
+  
   <div id="target-area" class="target-box">
-    <div class="label" style="color:#d9480f">⬇️ 이 지번에 상품을 넣으세요</div>
+    <div class="label" style="color:#d9480f">⬇️ 이 지번에 적치</div>
     <div class="target-val" id="p-jibun">-</div>
   </div>
 </div>
 
 <script>
-// 배포 ID (재적치용)
+// 재적치용 URL
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxlnPMPZAWhPum7f-yl3EVVn_wFqrh_v0GB6Edncx20eglrylv0iDbdET7o_jaPfj3e/exec";
 
 let skuMap = {};
-let html5QrCode = null;
 let currentStep = 1; 
 let currentProduct = null;
-let isProcessing = false; 
 let currentWorker = ""; 
 
 const els = {
@@ -138,8 +131,8 @@ const els = {
   workerDisplay: document.getElementById("worker-display"),
   step1: document.getElementById("step1"),
   step2: document.getElementById("step2"),
-  reader: document.getElementById("reader"),
   guide: document.getElementById("guide-msg"),
+  scanInput: document.getElementById("scan-input"), // 메인 입력창
   pName: document.getElementById("p-name"),
   pJibun: document.getElementById("p-jibun"),
   targetArea: document.getElementById("target-area"),
@@ -150,13 +143,11 @@ const els = {
   msgOverlay: document.getElementById("msg-overlay"),
   msgIcon: document.getElementById("msg-icon"),
   msgText: document.getElementById("msg-text"),
-  manualBox: document.getElementById("manual-box"),
-  mInput: document.getElementById("m-input"),
-  mBtn: document.getElementById("m-btn"),
   dbStatus: document.getElementById("db-status"),
   refreshBtn: document.getElementById("refresh-btn")
 };
 
+// 1. 작업자 로그인
 function confirmWorker() {
   const name = els.workerInput.value.trim();
   if(!name) { alert("이름을 입력해주세요!"); return; }
@@ -166,62 +157,47 @@ function confirmWorker() {
   loadData();
 }
 
+// 2. 데이터 로드
 async function loadData() {
   els.loading.style.display = 'flex';
   try {
     const res = await fetch(GAS_URL + "?t=" + Date.now());
     const data = await res.json();
     skuMap = data;
-    els.dbStatus.innerText = Object.keys(data).length + "개 로드";
+    els.dbStatus.innerText = Object.keys(data).length + "개";
     els.loading.style.display = 'none';
-    startScanner();
+    resetToStep1(); // 로드 완료 후 입력창 포커스
   } catch(e) {
-    alert("데이터 로드 실패");
+    alert("로드 실패");
     els.loading.style.display = 'none';
   }
 }
 
-async function startScanner() {
-  if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-  try {
-    // 🔥 후면 카메라 + 연속 초점 고정
-    const config = { 
-        fps: 10, 
-        qrbox: { width: 250, height: 150 }, 
-        aspectRatio: 1.0,
-        videoConstraints: { 
-            facingMode: "environment", 
-            focusMode: "continuous" 
-        }
-    };
-    await html5QrCode.start({ facingMode: "environment" }, config, onScan);
-  } catch(e) { console.error(e); }
-}
+// 3. 입력 처리 핸들러 (PDA 스캔 시 실행)
+function handleInput(value) {
+  const code = String(value).trim();
+  if (!code) return;
 
-function onScan(decodedText) {
-  if(isProcessing) return;
-  const code = String(decodedText).trim();
-  if(currentStep === 1) handleProductScan(code);
+  if (currentStep === 1) handleProductScan(code);
   else handleLocationScan(code);
+  
+  els.scanInput.value = ""; // 입력창 비우기
 }
 
 function handleProductScan(code) {
   const item = skuMap[code];
   if(item) {
-    isProcessing = true; 
     currentProduct = { code: item[1], name: item[0], jibun: item[2], zone: item[3], qty: 1 };
     openQtyModal(item[0]); 
-    playSound("success");
   } else {
-    showMessage("❌", "등록되지 않은 상품", "red");
-    playSound("error");
-    isProcessing = true;
-    setTimeout(() => isProcessing = false, 1500);
+    showMessage("❌", "미등록 상품", "red");
+    // 실패해도 입력창 포커스 유지
+    setTimeout(() => els.scanInput.focus(), 100);
   }
 }
 
 function openQtyModal(prodName) {
-  els.qtyTitle.innerHTML = `<span style="font-size:14px; color:#666">${prodName}</span><br>수량을 입력하세요`;
+  els.qtyTitle.innerHTML = `<span style="font-size:14px; color:#666">${prodName}</span><br>수량 입력`;
   els.qtyInput.value = "1"; 
   els.qtyModal.style.display = "flex";
   setTimeout(() => els.qtyInput.focus(), 100); 
@@ -239,21 +215,19 @@ function moveToStep2() {
   els.pName.innerText = `${currentProduct.name} (${currentProduct.qty}개)`;
   els.pJibun.innerText = currentProduct.jibun;
   setStep(2); 
-  isProcessing = false; 
 }
 
 function handleLocationScan(scannedJibun) {
   const targetJibun = currentProduct.jibun;
-  isProcessing = true; 
+  // 공백제거 비교
   if(scannedJibun.replace(/\s/g, "") === targetJibun.replace(/\s/g, "")) {
     saveLog(scannedJibun);
-    showMessage("✅", "재적치 완료!", "green");
-    playSound("success");
-    setTimeout(() => { setStep(1); clearInfo(); isProcessing = false; }, 1500);
+    showMessage("✅", "완료!", "green");
+    setTimeout(() => { resetToStep1(); }, 1500);
   } else {
-    showMessage("⚠️", "지번 불일치!<br>" + scannedJibun, "#ff6b00");
-    playSound("error");
-    setTimeout(() => { isProcessing = false; }, 2000);
+    showMessage("⚠️", "지번 불일치", "#ff6b00");
+    // 실패해도 입력창 포커스 유지
+    setTimeout(() => els.scanInput.focus(), 100);
   }
 }
 
@@ -277,23 +251,28 @@ function setStep(step) {
   if(step === 1) {
     els.step1.classList.add("active");
     els.step2.classList.remove("active-2");
-    els.reader.style.borderColor = "#5f0080"; 
+    els.scanInput.style.borderColor = "#5f0080"; 
     els.guide.innerText = "상품 바코드를 스캔하세요";
     els.guide.style.color = "#5f0080";
     els.targetArea.style.display = "none";
-    els.manualBox.style.display = "flex"; // 1단계: 수기 입력 보임
   } else {
     els.step1.classList.remove("active");
     els.step2.classList.add("active-2");
-    els.reader.style.borderColor = "#ff6b00"; 
+    els.scanInput.style.borderColor = "#ff6b00"; 
     els.guide.innerText = "지번 바코드를 스캔하세요";
     els.guide.style.color = "#ff6b00";
     els.targetArea.style.display = "block";
-    els.manualBox.style.display = "none"; // 2단계: 수기 입력 숨김 (어뷰징 방지)
   }
+  // 단계 바뀔 때마다 무조건 입력창 포커스
+  setTimeout(() => els.scanInput.focus(), 100);
 }
 
-function clearInfo() { els.pName.innerText = "-"; els.pJibun.innerText = "-"; currentProduct = null; }
+function resetToStep1() {
+  setStep(1);
+  els.pName.innerText = "-";
+  els.pJibun.innerText = "-";
+  currentProduct = null;
+}
 
 function showMessage(icon, text, color) {
   els.msgIcon.innerText = icon;
@@ -303,18 +282,29 @@ function showMessage(icon, text, color) {
   setTimeout(() => els.msgOverlay.style.display = 'none', 1500);
 }
 
-els.mBtn.addEventListener("click", () => {
-  const val = els.mInput.value.trim();
-  if(!val) return;
-  onScan(val);
-  els.mInput.value = "";
+// 이벤트 리스너
+// 메인 입력창 엔터 처리
+els.scanInput.addEventListener("keypress", (e) => {
+  if(e.key === "Enter") handleInput(els.scanInput.value);
 });
 
+// 수량 입력창 엔터 처리
 els.qtyInput.addEventListener("keypress", (e) => { if(e.key === "Enter") confirmQty(); });
+// 작업자 입력창 엔터 처리
 els.workerInput.addEventListener("keypress", (e) => { if(e.key === "Enter") confirmWorker(); });
-els.refreshBtn.addEventListener("click", () => { if(confirm("데이터를 새로고침 하시겠습니까?")) loadData(); });
 
-function playSound(type) { if(navigator.vibrate) { if(type === "success") navigator.vibrate(100); else navigator.vibrate([200, 100, 200]); } }
+els.refreshBtn.addEventListener("click", () => { if(confirm("새로고침?")) loadData(); });
+
+// 화면 아무데나 터치해도 입력창에 포커스 가도록 (PDA 사용성 향상)
+document.addEventListener("click", (e) => {
+  // 팝업이나 버튼이 아닐 때만
+  if(!e.target.closest("button") && !e.target.closest("input")) {
+    if(els.loginModal.style.display === "none" && els.qtyModal.style.display === "none") {
+      els.scanInput.focus();
+    }
+  }
+});
+
 </script>
 </body>
 </html>
