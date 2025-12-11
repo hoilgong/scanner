@@ -9,88 +9,119 @@
 <style>
   :root { --kurly-purple: #5f0080; --kurly-orange: #ff6b00; --bg-gray: #f4f4f4; --text-black: #333; }
   * { box-sizing: border-box; }
-  body { height: 100vh; margin: 0; padding: 10px; overflow: hidden; font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-gray); display: flex; flex-direction: column; align-items: center; }
   
-  /* 기본 레이아웃 순서 */
-  .header { order: 1; width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-shrink: 0; position: sticky; top: 0; z-index: 100; background-color: var(--bg-gray); }
-  #worker-display { order: 2; width: 100%; max-width: 400px; text-align: right; font-size: 12px; color: #666; margin-bottom: 5px; font-weight: 500; flex-shrink: 0; }
-  #step-bar { order: 3; width: 100%; max-width: 400px; display: flex; margin-bottom: 10px; flex-shrink: 0; background: #ddd; border-radius: 8px; overflow: hidden; }
+  /* 화면 전체 꽉 채우기 & 스크롤 방지 */
+  body { 
+    height: 100vh; margin: 0; padding: 0; 
+    overflow: hidden; /* 스크롤 아예 막음 */
+    font-family: 'Noto Sans KR', sans-serif; 
+    background-color: var(--bg-gray); 
+    display: flex; flex-direction: column; 
+  }
   
-  #guide-msg { width: 100%; max-width: 400px; text-align: center; font-size: 18px; font-weight: 800; margin-bottom: 5px; color: var(--kurly-purple); flex-shrink: 0; }
+  /* --- 공통 요소 --- */
+  .header { 
+    padding: 10px; width: 100%; display: flex; justify-content: space-between; align-items: center; 
+    background-color: white; border-bottom: 1px solid #ddd; flex-shrink: 0; height: 50px;
+  }
+  .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
+  .status-btn { font-size: 12px; background: white; padding: 5px 10px; border-radius: 20px; color: #555; font-weight: bold; border: 1px solid #ddd; cursor: pointer; }
   
-  #input-box { width: 100%; max-width: 400px; margin-bottom: 10px; flex-shrink: 0; background: var(--bg-gray); }
+  #worker-display { width: 100%; text-align: right; font-size: 12px; color: #666; padding: 5px 10px; background: #f9f9f9; flex-shrink: 0; }
+  
+  #step-bar { display: flex; width: 100%; background: #ddd; height: 40px; flex-shrink: 0; }
+  .step { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: #999; }
+  .step.active { background: var(--kurly-purple); color: white; }
+  .step.active-2 { background: var(--kurly-orange); color: white; }
+
+  /* 중앙 컨텐츠 영역 (유동적) */
+  #main-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* 입력창 영역 (항상 하단) */
+  #input-wrapper {
+    width: 100%;
+    padding: 10px;
+    background: white;
+    border-top: 1px solid #ddd;
+    flex-shrink: 0;
+  }
   #scan-input { 
     width: 100%; padding: 15px; font-size: 18px; border: 2px solid var(--kurly-purple); 
     border-radius: 8px; outline: none; text-align: center; font-weight: bold; 
-    background: white; color: #333;
-  }
-  #scan-input:focus { box-shadow: 0 0 8px rgba(95,0,128,0.3); border-color: var(--kurly-purple); }
-
-  #info-card { flex-grow: 1; width: 100%; max-width: 400px; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: start; overflow-y: auto; margin-bottom: 5px; }
-  
-  /* --- 1단계 모드 (기본) --- */
-  body.mode-step1 #guide-msg { order: 4; }
-  body.mode-step1 #input-box { order: 5; }
-  body.mode-step1 #info-card { order: 6; }
-
-  /* --- 2단계 모드 (지번 강조 + 키보드 대응) --- */
-  /* 불필요한 요소 숨김으로 공간 확보 */
-  body.mode-step2 #worker-display { display: none; }
-  body.mode-step2 #step-bar { display: none; } 
-  body.mode-step2 #guide-msg { display: none; } /* 지번 박스 자체가 가이드 역할 */
-  
-  body.mode-step2 #info-card { 
-    order: 4; 
-    margin-bottom: 10px; 
-    border: 2px solid var(--kurly-orange); /* 카드 전체를 주황색 테두리로 강조 */
-    padding: 10px;
-    justify-content: center; /* 내용 중앙 정렬 */
-    background: #fff4e6; /* 배경도 연한 주황 */
   }
   
-  /* 2단계에서 상품명은 작게 */
-  body.mode-step2 .row { margin-bottom: 5px; text-align: center; }
-  body.mode-step2 .label { font-size: 12px; }
-  body.mode-step2 #p-name { font-size: 16px; font-weight: 500; color: #555; }
+  /* 정보 카드 */
+  #info-card {
+    background: white; border-radius: 10px; padding: 15px; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+  }
+  .row { margin-bottom: 10px; }
+  .label { font-size: 13px; color: #888; }
+  .val { font-size: 18px; font-weight: 700; color: #333; word-break: break-all; }
 
-  /* 2단계에서 지번 박스 극대화 */
-  body.mode-step2 .target-box { 
-    margin-top: 5px; 
-    border: none; 
-    background: transparent; 
-    padding: 0; 
-    flex-grow: 1; /* 남은 공간 모두 차지 */
-    display: flex;
+  /* 2단계 전용 타겟 박스 */
+  #target-area {
+    display: none; /* 1단계에선 숨김 */
+    flex-grow: 1;
+    background: #fff4e6;
+    border: 2px solid var(--kurly-orange);
+    border-radius: 8px;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    text-align: center;
   }
-  body.mode-step2 .target-val { 
-    font-size: 18vw; /* 화면 너비에 비례해서 엄청 크게 */
-    line-height: 1.1;
-    text-shadow: 2px 2px 0px rgba(255,255,255,1);
-  }
-  
-  body.mode-step2 #input-box { order: 6; margin-bottom: 0; padding-bottom: 5px; } 
+  .target-val { font-size: 24vw; font-weight: 900; color: var(--kurly-orange); line-height: 1; margin-top: 10px; }
 
-  /* 공통 스타일 유지 */
-  .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
-  .status-btn { font-size: 12px; background: white; padding: 6px 12px; border-radius: 20px; color: #555; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; border: 1px solid #ddd; }
-  .step { flex: 1; text-align: center; padding: 10px 0; font-size: 14px; font-weight: bold; color: #999; }
-  .step.active { background: var(--kurly-purple); color: white; }
-  .step.active-2 { background: var(--kurly-orange); color: white; }
+  /* =========================================
+     [모드별 스타일 변경 - 핵심] 
+     ========================================= */
+     
+  /* 1단계 (상품 스캔) */
+  body.mode-step1 #guide-msg { display: block; text-align: center; color: var(--kurly-purple); font-weight: 800; margin-bottom: 10px; }
+  body.mode-step1 #target-area { display: none; }
+  body.mode-step1 #scan-input { border-color: var(--kurly-purple); }
+
+  /* 2단계 (지번 스캔) - 모든 방해 요소 제거 */
+  body.mode-step2 .header { display: none !important; }        /* 헤더 숨김 */
+  body.mode-step2 #worker-display { display: none !important; } /* 이름 숨김 */
+  body.mode-step2 #step-bar { display: none !important; }       /* 단계바 숨김 */
+  body.mode-step2 #guide-msg { display: none !important; }      /* 가이드 숨김 */
   
-  .row { margin-bottom: 20px; }
-  .label { font-size: 13px; color: #888; margin-bottom: 5px; }
-  .val { font-size: 20px; font-weight: 700; color: #333; word-break: break-all; }
+  body.mode-step2 #main-container { padding: 0; }               /* 여백 제거 */
+  body.mode-step2 #info-card { 
+    border-radius: 0; box-shadow: none; padding: 5px; 
+    background: #fff4e6; /* 전체 배경 주황 */
+  }
   
-  .target-box { background: #fff4e6; padding: 15px; border-radius: 8px; border: 2px solid var(--kurly-orange); text-align: center; display: none; margin-top: 10px; }
-  .target-val { font-size: 36px; font-weight: 900; color: var(--kurly-orange); }
+  body.mode-step2 .row { display: none; } /* 기존 상품 정보 숨김 (아래 작은 텍스트로 대체) */
   
+  /* 2단계에서만 보이는 상품명 (작게 상단 고정) */
+  #mini-p-info { display: none; font-size: 14px; text-align: center; color: #666; margin-bottom: 5px; }
+  body.mode-step2 #mini-p-info { display: block; }
+
+  body.mode-step2 #target-area { 
+    display: flex; 
+    border: none; /* 테두리 제거 */
+    background: transparent;
+  }
+  
+  body.mode-step2 #input-wrapper { background: #fff4e6; border-top: none; padding-bottom: 5px; } /* 하단부 배경 일치 */
+  body.mode-step2 #scan-input { border-color: var(--kurly-orange); background: white; }
+
+  /* 모달 스타일 */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: center; }
-  .modal-box { background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-  .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; }
-  .modal-input { width: 100%; padding: 10px; font-size: 20px; text-align: center; border: 2px solid var(--kurly-purple); border-radius: 8px; margin-bottom: 20px; font-weight: bold; color: var(--text-black); }
+  .modal-box { background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 12px; text-align: center; }
+  .modal-input { width: 100%; padding: 10px; font-size: 20px; text-align: center; border: 2px solid var(--kurly-purple); border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
   .modal-btn { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; background: var(--kurly-purple); color: white; border: none; border-radius: 8px; cursor: pointer; }
   
   #msg-overlay { z-index: 2001; color: white; pointer-events: none; }
@@ -103,65 +134,63 @@
 
 <div id="login-modal" class="modal-overlay" style="display: flex;">
   <div class="modal-box">
-    <div class="logo" style="margin-bottom: 20px; color: #5f0080;">Kurly Work (PDA)</div>
-    <div class="modal-title">작업자 이름 입력</div>
-    <input type="text" id="worker-input" class="modal-input" placeholder="이름">
-    <button class="modal-btn" onclick="confirmWorker()">작업 시작</button>
+    <div class="logo" style="margin-bottom: 20px;">Kurly Work</div>
+    <div style="font-weight:bold; margin-bottom:15px;">작업자 이름</div>
+    <input type="text" id="worker-input" class="modal-input" placeholder="이름 입력">
+    <button class="modal-btn" onclick="confirmWorker()">시작</button>
   </div>
-</div>
-
-<div id="loading">
-  <p style="color:#5f0080; font-weight:bold;">데이터 동기화 중...</p>
 </div>
 
 <div id="qty-modal" class="modal-overlay">
   <div class="modal-box">
-    <div class="modal-title" id="qty-title"></div>
+    <div id="qty-title" style="margin-bottom:15px; font-weight:bold;"></div>
     <input type="tel" id="qty-input" class="modal-input" value="1">
     <button class="modal-btn" onclick="confirmQty()">확인</button>
   </div>
 </div>
 
+<div id="loading"><p style="color:#5f0080; font-weight:bold;">동기화 중...</p></div>
+
 <div id="msg-overlay" class="modal-overlay" style="background: rgba(0,0,0,0.8);">
-  <div id="msg-icon">✅</div>
-  <div id="msg-text">완료</div>
+  <div id="msg-icon"></div><div id="msg-text"></div>
 </div>
 
 <div class="header">
   <div class="logo">재적치 (PDA)</div>
-  <div id="refresh-btn" class="status-btn">
-    <span id="db-status">대기</span> 🔄
-  </div>
+  <div class="status-btn" id="refresh-btn"><span id="db-status">0개</span> 🔄</div>
 </div>
 
 <div id="worker-display"></div>
 
 <div id="step-bar">
-  <div id="step1" class="step active">1. 상품 스캔</div>
-  <div id="step2" class="step">2. 지번 스캔</div>
+  <div id="step1" class="step active">1. 상품</div>
+  <div id="step2" class="step">2. 지번</div>
 </div>
 
-<div id="guide-msg">상품 바코드를 스캔하세요</div>
-
-<div id="input-box">
-  <input type="text" id="scan-input" placeholder="스캔 또는 입력..." autocomplete="off">
-</div>
-
-<div id="info-card">
-  <div class="row">
-    <div class="label">상품명 (수량)</div>
-    <div class="val" id="p-name">-</div>
-  </div>
+<div id="main-container">
+  <div id="guide-msg">상품 바코드를 스캔하세요</div>
   
-  <div id="target-area" class="target-box">
-    <div class="label" style="color:#d9480f; font-weight:bold;">⬇️ 여기로 이동하세요</div>
-    <div class="target-val" id="p-jibun">-</div>
+  <div id="info-card">
+    <div class="row">
+      <div class="label">상품명</div>
+      <div class="val" id="p-name">-</div>
+    </div>
+    
+    <div id="mini-p-info"></div>
+
+    <div id="target-area">
+      <div style="font-size:16px; color:#d9480f; font-weight:bold;">⬇️ 이 지번에 적치</div>
+      <div class="target-val" id="p-jibun">-</div>
+    </div>
   </div>
+</div>
+
+<div id="input-wrapper">
+  <input type="text" id="scan-input" placeholder="스캔..." autocomplete="off">
 </div>
 
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxlnPMPZAWhPum7f-yl3EVVn_wFqrh_v0GB6Edncx20eglrylv0iDbdET7o_jaPfj3e/exec";
-
 let skuMap = {};
 let currentStep = 1; 
 let currentProduct = null;
@@ -174,11 +203,10 @@ const els = {
   workerDisplay: document.getElementById("worker-display"),
   step1: document.getElementById("step1"),
   step2: document.getElementById("step2"),
-  guide: document.getElementById("guide-msg"),
   scanInput: document.getElementById("scan-input"), 
   pName: document.getElementById("p-name"),
+  miniInfo: document.getElementById("mini-p-info"),
   pJibun: document.getElementById("p-jibun"),
-  targetArea: document.getElementById("target-area"),
   loading: document.getElementById("loading"),
   qtyModal: document.getElementById("qty-modal"),
   qtyInput: document.getElementById("qty-input"),
@@ -192,7 +220,7 @@ const els = {
 
 function confirmWorker() {
   const name = els.workerInput.value.trim();
-  if(!name) { alert("이름을 입력해주세요!"); return; }
+  if(!name) { alert("이름 필수"); return; }
   currentWorker = name;
   els.workerDisplay.innerText = "작업자: " + name; 
   els.loginModal.style.display = "none"; 
@@ -209,18 +237,15 @@ async function loadData() {
     els.loading.style.display = 'none';
     resetToStep1(); 
   } catch(e) {
-    alert("데이터 로드 실패");
-    els.loading.style.display = 'none';
+    alert("로드 실패"); els.loading.style.display = 'none';
   }
 }
 
 function handleInput(value) {
   const code = String(value).trim();
   if (!code) return;
-
   if (currentStep === 1) handleProductScan(code);
   else handleLocationScan(code);
-  
   els.scanInput.value = ""; 
 }
 
@@ -230,13 +255,13 @@ function handleProductScan(code) {
     currentProduct = { code: item[1], name: item[0], jibun: item[2], zone: item[3], qty: 1 };
     openQtyModal(item[0]); 
   } else {
-    showMessage("❌", "미등록 상품", "red");
+    showMessage("❌", "미등록", "red");
     setTimeout(() => els.scanInput.focus(), 100);
   }
 }
 
-function openQtyModal(prodName) {
-  els.qtyTitle.innerHTML = `<span style="font-size:14px; color:#666">${prodName}</span><br>수량 입력`;
+function openQtyModal(name) {
+  els.qtyTitle.innerText = name + "\n수량 입력";
   els.qtyInput.value = "1"; 
   els.qtyModal.style.display = "flex";
   setTimeout(() => els.qtyInput.focus(), 100); 
@@ -252,6 +277,8 @@ function confirmQty() {
 
 function moveToStep2() {
   els.pName.innerText = `${currentProduct.name} (${currentProduct.qty}개)`;
+  // 2단계에서 작게 보일 텍스트 설정
+  els.miniInfo.innerText = `${currentProduct.name} (${currentProduct.qty}개)`;
   els.pJibun.innerText = currentProduct.jibun;
   setStep(2); 
 }
@@ -263,22 +290,17 @@ function handleLocationScan(scannedJibun) {
     showMessage("✅", "완료!", "green");
     setTimeout(() => { resetToStep1(); }, 1500);
   } else {
-    showMessage("⚠️", "지번 불일치", "#ff6b00");
+    showMessage("⚠️", "불일치", "#ff6b00");
     setTimeout(() => els.scanInput.focus(), 100);
   }
 }
 
 function saveLog(scannedLoc) {
   fetch(GAS_URL, {
-    method: "POST",
-    mode: "no-cors",
+    method: "POST", mode: "no-cors",
     body: JSON.stringify({
-      workerName: currentWorker, 
-      prodCode: currentProduct.code,
-      prodName: currentProduct.name,
-      targetJibun: currentProduct.jibun,
-      scannedJibun: scannedLoc, 
-      qty: currentProduct.qty 
+      workerName: currentWorker, prodCode: currentProduct.code, prodName: currentProduct.name,
+      targetJibun: currentProduct.jibun, scannedJibun: scannedLoc, qty: currentProduct.qty 
     })
   });
 }
@@ -286,33 +308,22 @@ function saveLog(scannedLoc) {
 function setStep(step) {
   currentStep = step;
   if(step === 1) {
-    // 1단계: 일반 모드
     els.body.classList.remove("mode-step2");
     els.body.classList.add("mode-step1");
-    
-    els.step1.classList.add("active");
-    els.step2.classList.remove("active-2");
-    els.scanInput.style.borderColor = "#5f0080"; 
-    els.guide.innerText = "상품 바코드를 스캔하세요";
-    els.targetArea.style.display = "none";
+    els.step1.classList.add("active"); els.step2.classList.remove("active-2");
+    els.scanInput.placeholder = "상품 바코드 스캔";
   } else {
-    // 2단계: 집중 모드 (지번 대문짝만하게)
     els.body.classList.remove("mode-step1");
     els.body.classList.add("mode-step2");
-
-    els.step1.classList.remove("active");
-    els.step2.classList.add("active-2");
-    els.scanInput.style.borderColor = "#ff6b00"; 
-    els.guide.innerText = "지번 바코드를 스캔하세요";
-    els.targetArea.style.display = "block";
+    els.step1.classList.remove("active"); els.step2.classList.add("active-2");
+    els.scanInput.placeholder = "지번 바코드 스캔";
   }
   setTimeout(() => els.scanInput.focus(), 100);
 }
 
 function resetToStep1() {
   setStep(1);
-  els.pName.innerText = "-";
-  els.pJibun.innerText = "-";
+  els.pName.innerText = "-"; els.pJibun.innerText = "-";
   currentProduct = null;
 }
 
@@ -321,24 +332,18 @@ function showMessage(icon, text, color) {
   els.msgText.innerHTML = text;
   els.msgText.style.color = color;
   els.msgOverlay.style.display = 'flex';
-  setTimeout(() => els.msgOverlay.style.display = 'none', 1500);
+  setTimeout(() => els.msgOverlay.style.display = 'none', 1000);
 }
 
-els.scanInput.addEventListener("keypress", (e) => {
-  if(e.key === "Enter") handleInput(els.scanInput.value);
-});
+els.scanInput.addEventListener("keypress", (e) => { if(e.key === "Enter") handleInput(els.scanInput.value); });
 els.qtyInput.addEventListener("keypress", (e) => { if(e.key === "Enter") confirmQty(); });
 els.workerInput.addEventListener("keypress", (e) => { if(e.key === "Enter") confirmWorker(); });
 
-els.refreshBtn.addEventListener("click", () => { 
-  if(confirm("데이터를 다시 불러오시겠습니까?")) loadData(); 
-});
+els.refreshBtn.addEventListener("click", () => { if(confirm("DB 갱신?")) loadData(); });
 
 document.addEventListener("click", (e) => {
   if(!e.target.closest("button") && !e.target.closest("input")) {
-    if(els.loginModal.style.display === "none" && els.qtyModal.style.display === "none") {
-      els.scanInput.focus();
-    }
+    if(els.loginModal.style.display === "none" && els.qtyModal.style.display === "none") els.scanInput.focus();
   }
 });
 </script>
