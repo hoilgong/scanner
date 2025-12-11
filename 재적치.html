@@ -23,7 +23,7 @@
   .step.active { background: var(--kurly-purple); color: white; }
   .step.active-2 { background: var(--kurly-orange); color: white; }
   
-  /* 입력창 (수정됨: 버튼과 나란히 배치) */
+  /* 입력창 (버튼과 나란히 배치) */
   #input-box { width: 100%; max-width: 400px; margin-bottom: 15px; flex-shrink: 0; display: flex; gap: 8px; }
   
   #scan-input { 
@@ -31,19 +31,20 @@
     border-radius: 8px; outline: none; text-align: center; font-weight: bold; 
     background: white; color: #333;
   }
+  /* 읽기 전용일 때(키보드 꺼짐) 배경색 살짝 변경 */
+  #scan-input[readonly] { background: #f9f9f9; color: #555; cursor: default; }
   #scan-input:focus { box-shadow: 0 0 8px rgba(95,0,128,0.3); border-color: var(--kurly-purple); }
 
-  /* 키보드 토글 버튼 (신규) */
+  /* 키보드 토글 버튼 */
   #kbd-toggle {
     width: 54px; display: flex; justify-content: center; align-items: center;
     background: white; border: 2px solid #ddd; border-radius: 8px;
-    font-size: 24px; cursor: pointer; transition: 0.2s;
+    font-size: 24px; cursor: pointer; transition: 0.2s; user-select: none;
   }
   #kbd-toggle.active { background: #eee; border-color: #999; }
   
   #guide-msg { width: 100%; max-width: 400px; text-align: center; font-size: 18px; font-weight: 800; margin-bottom: 10px; color: var(--kurly-purple); flex-shrink: 0; }
 
-  /* 정보 카드 */
   #info-card { flex-grow: 1; width: 100%; max-width: 400px; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: start; overflow-y: auto; }
   .row { margin-bottom: 20px; }
   .label { font-size: 13px; color: #888; margin-bottom: 5px; }
@@ -110,7 +111,7 @@
 <div id="guide-msg">상품 바코드를 스캔하세요</div>
 
 <div id="input-box">
-  <input type="text" id="scan-input" inputmode="none" placeholder="스캔 (키보드 끔)" autocomplete="off">
+  <input type="text" id="scan-input" readonly placeholder="스캔 (키보드 끔)" autocomplete="off">
   <div id="kbd-toggle" onclick="toggleKeyboard()">⌨️</div>
 </div>
 
@@ -134,6 +135,7 @@ let skuMap = {};
 let currentStep = 1; 
 let currentProduct = null;
 let currentWorker = ""; 
+let scanBuffer = ""; // 키보드 끔 모드일 때 스캔값 저장소
 
 const els = {
   loginModal: document.getElementById("login-modal"),
@@ -143,7 +145,7 @@ const els = {
   step2: document.getElementById("step2"),
   guide: document.getElementById("guide-msg"),
   scanInput: document.getElementById("scan-input"),
-  kbdToggle: document.getElementById("kbd-toggle"), // 토글 버튼
+  kbdToggle: document.getElementById("kbd-toggle"),
   pName: document.getElementById("p-name"),
   pJibun: document.getElementById("p-jibun"),
   targetArea: document.getElementById("target-area"),
@@ -158,27 +160,61 @@ const els = {
   refreshBtn: document.getElementById("refresh-btn")
 };
 
-// 0. 키보드 토글 기능 (비상시 수기 입력용)
+// 0. 키보드 토글 기능 (readonly 속성으로 제어)
 function toggleKeyboard() {
   const el = els.scanInput;
-  // 현재 none이면 text로 변경
-  if (el.getAttribute('inputmode') === 'none') {
-    el.setAttribute('inputmode', 'text');
+  
+  // 현재 readonly(키보드 꺼짐) 상태라면 -> 켠다
+  if (el.hasAttribute('readonly')) {
+    el.removeAttribute('readonly');
     el.placeholder = "직접 입력하세요";
-    els.kbdToggle.innerText = "📝"; // 아이콘 변경
+    els.kbdToggle.innerText = "📝";
     els.kbdToggle.classList.add("active");
+    scanBuffer = ""; // 버퍼 초기화
+    
   } else {
-    el.setAttribute('inputmode', 'none');
+    // 키보드 끄기 (readonly 적용)
+    el.setAttribute('readonly', 'readonly');
     el.placeholder = "스캔 (키보드 끔)";
     els.kbdToggle.innerText = "⌨️";
     els.kbdToggle.classList.remove("active");
   }
-  // 변경 후 즉시 포커스
+  
   el.blur();
   setTimeout(() => el.focus(), 50);
 }
 
-// 1. 작업자 로그인
+// 1. 핵심: readonly 상태에서도 스캔값 받아내기
+// PDA 스캔은 매우 빠른 속도로 'keydown' 이벤트를 발생시킵니다.
+document.addEventListener('keydown', (e) => {
+  // 1) 입력창(scan-input)에 포커스가 있을 때만 동작
+  if (document.activeElement !== els.scanInput) return;
+
+  // 2) 키보드가 꺼진(readonly) 상태일 때만 우리가 수동으로 처리
+  if (els.scanInput.hasAttribute('readonly')) {
+    
+    // 엔터키가 들어오면 입력 완료로 처리
+    if (e.key === 'Enter') {
+      if(scanBuffer.length > 0) {
+        els.scanInput.value = scanBuffer; // 화면에 표시
+        handleInput(scanBuffer);          // 처리 함수 실행
+        scanBuffer = "";                  // 버퍼 비우기
+      }
+    } 
+    // 백스페이스 처리
+    else if (e.key === 'Backspace') {
+      scanBuffer = scanBuffer.slice(0, -1);
+      els.scanInput.value = scanBuffer;
+    }
+    // 일반 문자/숫자만 받기 (Shift, Ctrl 등 제외)
+    else if (e.key.length === 1) {
+      scanBuffer += e.key;
+      els.scanInput.value = scanBuffer; // 사용자가 보게끔 값 업데이트
+    }
+  }
+});
+
+// 기존 로직들
 function confirmWorker() {
   const name = els.workerInput.value.trim();
   if(!name) { alert("이름을 입력해주세요!"); return; }
@@ -188,7 +224,6 @@ function confirmWorker() {
   loadData();
 }
 
-// 2. 데이터 로드
 async function loadData() {
   els.loading.style.display = 'flex';
   try {
@@ -204,7 +239,6 @@ async function loadData() {
   }
 }
 
-// 3. 입력 처리 핸들러
 function handleInput(value) {
   const code = String(value).trim();
   if (!code) return;
@@ -212,7 +246,9 @@ function handleInput(value) {
   if (currentStep === 1) handleProductScan(code);
   else handleLocationScan(code);
   
+  // 처리 후 입력창 비우기
   els.scanInput.value = ""; 
+  scanBuffer = "";
 }
 
 function handleProductScan(code) {
@@ -291,6 +327,7 @@ function setStep(step) {
     els.guide.style.color = "#ff6b00";
     els.targetArea.style.display = "block";
   }
+  // 단계 바뀔 때 포커스 유지
   setTimeout(() => els.scanInput.focus(), 100);
 }
 
@@ -310,18 +347,20 @@ function showMessage(icon, text, color) {
 }
 
 // 이벤트 리스너
+// 키보드 켜진 상태(일반 모드)에서의 엔터 처리
 els.scanInput.addEventListener("keypress", (e) => {
-  if(e.key === "Enter") handleInput(els.scanInput.value);
+  if(!els.scanInput.hasAttribute('readonly') && e.key === "Enter") {
+    handleInput(els.scanInput.value);
+  }
 });
 els.qtyInput.addEventListener("keypress", (e) => { if(e.key === "Enter") confirmQty(); });
 els.workerInput.addEventListener("keypress", (e) => { if(e.key === "Enter") confirmWorker(); });
 els.refreshBtn.addEventListener("click", () => { if(confirm("새로고침?")) loadData(); });
 
-// 화면 터치 시 포커스 유지 (단, 토글 버튼 클릭 시는 제외)
+// 화면 클릭 시 메인 인풋에 포커스 주기 (팝업 없을 때만)
 document.addEventListener("click", (e) => {
   if(els.loginModal.style.display !== "none" || els.qtyModal.style.display !== "none") return;
-  
-  // 버튼이나 인풋을 누른게 아니면 메인 인풋으로 포커스
+  // 버튼, 인풋 등을 누른게 아니면 포커스
   if(!e.target.closest("button") && !e.target.closest("input") && !e.target.closest("#kbd-toggle")) {
     els.scanInput.focus();
   }
