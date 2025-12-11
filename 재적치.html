@@ -11,12 +11,11 @@
   * { box-sizing: border-box; }
   body { height: 100vh; margin: 0; padding: 10px; overflow: hidden; font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-gray); display: flex; flex-direction: column; align-items: center; }
   
-  /* 요소 순서 제어를 위한 Flex 설정 */
+  /* 기본 레이아웃 순서 */
   .header { order: 1; width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-shrink: 0; position: sticky; top: 0; z-index: 100; background-color: var(--bg-gray); }
   #worker-display { order: 2; width: 100%; max-width: 400px; text-align: right; font-size: 12px; color: #666; margin-bottom: 5px; font-weight: 500; flex-shrink: 0; }
   #step-bar { order: 3; width: 100%; max-width: 400px; display: flex; margin-bottom: 10px; flex-shrink: 0; background: #ddd; border-radius: 8px; overflow: hidden; }
   
-  /* 가이드 메시지와 입력창, 정보카드의 순서는 JS로 상황에 따라 변경됨 */
   #guide-msg { width: 100%; max-width: 400px; text-align: center; font-size: 18px; font-weight: 800; margin-bottom: 5px; color: var(--kurly-purple); flex-shrink: 0; }
   
   #input-box { width: 100%; max-width: 400px; margin-bottom: 10px; flex-shrink: 0; background: var(--bg-gray); }
@@ -29,16 +28,52 @@
 
   #info-card { flex-grow: 1; width: 100%; max-width: 400px; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: start; overflow-y: auto; margin-bottom: 5px; }
   
-  /* 기본 모드 (1단계: 상품 스캔) */
+  /* --- 1단계 모드 (기본) --- */
   body.mode-step1 #guide-msg { order: 4; }
   body.mode-step1 #input-box { order: 5; }
   body.mode-step1 #info-card { order: 6; }
 
-  /* 지번 스캔 모드 (2단계: 입력창 하단 이동) */
-  body.mode-step2 #info-card { order: 4; margin-bottom: 10px; } /* 카드가 위로 */
-  body.mode-step2 #guide-msg { order: 5; font-size: 16px; margin-bottom: 5px; } /* 가이드 메시지 */
-  body.mode-step2 #input-box { order: 6; margin-bottom: 0; padding-bottom: 5px; } /* 입력창이 맨 아래로 */
+  /* --- 2단계 모드 (지번 강조 + 키보드 대응) --- */
+  /* 불필요한 요소 숨김으로 공간 확보 */
+  body.mode-step2 #worker-display { display: none; }
+  body.mode-step2 #step-bar { display: none; } 
+  body.mode-step2 #guide-msg { display: none; } /* 지번 박스 자체가 가이드 역할 */
+  
+  body.mode-step2 #info-card { 
+    order: 4; 
+    margin-bottom: 10px; 
+    border: 2px solid var(--kurly-orange); /* 카드 전체를 주황색 테두리로 강조 */
+    padding: 10px;
+    justify-content: center; /* 내용 중앙 정렬 */
+    background: #fff4e6; /* 배경도 연한 주황 */
+  }
+  
+  /* 2단계에서 상품명은 작게 */
+  body.mode-step2 .row { margin-bottom: 5px; text-align: center; }
+  body.mode-step2 .label { font-size: 12px; }
+  body.mode-step2 #p-name { font-size: 16px; font-weight: 500; color: #555; }
 
+  /* 2단계에서 지번 박스 극대화 */
+  body.mode-step2 .target-box { 
+    margin-top: 5px; 
+    border: none; 
+    background: transparent; 
+    padding: 0; 
+    flex-grow: 1; /* 남은 공간 모두 차지 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  body.mode-step2 .target-val { 
+    font-size: 18vw; /* 화면 너비에 비례해서 엄청 크게 */
+    line-height: 1.1;
+    text-shadow: 2px 2px 0px rgba(255,255,255,1);
+  }
+  
+  body.mode-step2 #input-box { order: 6; margin-bottom: 0; padding-bottom: 5px; } 
+
+  /* 공통 스타일 유지 */
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
   .status-btn { font-size: 12px; background: white; padding: 6px 12px; border-radius: 20px; color: #555; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; border: 1px solid #ddd; }
   .step { flex: 1; text-align: center; padding: 10px 0; font-size: 14px; font-weight: bold; color: #999; }
@@ -52,7 +87,6 @@
   .target-box { background: #fff4e6; padding: 15px; border-radius: 8px; border: 2px solid var(--kurly-orange); text-align: center; display: none; margin-top: 10px; }
   .target-val { font-size: 36px; font-weight: 900; color: var(--kurly-orange); }
   
-  /* 모달 등 */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: center; }
   .modal-box { background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
   .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; }
@@ -65,7 +99,9 @@
   #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; }
 </style>
 </head>
-<body class="mode-step1"> <div id="login-modal" class="modal-overlay" style="display: flex;">
+<body class="mode-step1">
+
+<div id="login-modal" class="modal-overlay" style="display: flex;">
   <div class="modal-box">
     <div class="logo" style="margin-bottom: 20px; color: #5f0080;">Kurly Work (PDA)</div>
     <div class="modal-title">작업자 이름 입력</div>
@@ -118,7 +154,7 @@
   </div>
   
   <div id="target-area" class="target-box">
-    <div class="label" style="color:#d9480f">⬇️ 이 지번에 적치</div>
+    <div class="label" style="color:#d9480f; font-weight:bold;">⬇️ 여기로 이동하세요</div>
     <div class="target-val" id="p-jibun">-</div>
   </div>
 </div>
@@ -250,7 +286,7 @@ function saveLog(scannedLoc) {
 function setStep(step) {
   currentStep = step;
   if(step === 1) {
-    // 1단계: 입력창 중간 배치
+    // 1단계: 일반 모드
     els.body.classList.remove("mode-step2");
     els.body.classList.add("mode-step1");
     
@@ -258,10 +294,9 @@ function setStep(step) {
     els.step2.classList.remove("active-2");
     els.scanInput.style.borderColor = "#5f0080"; 
     els.guide.innerText = "상품 바코드를 스캔하세요";
-    els.guide.style.color = "#5f0080";
     els.targetArea.style.display = "none";
   } else {
-    // 2단계: 입력창 하단 배치 (키보드 대응)
+    // 2단계: 집중 모드 (지번 대문짝만하게)
     els.body.classList.remove("mode-step1");
     els.body.classList.add("mode-step2");
 
@@ -269,7 +304,6 @@ function setStep(step) {
     els.step2.classList.add("active-2");
     els.scanInput.style.borderColor = "#ff6b00"; 
     els.guide.innerText = "지번 바코드를 스캔하세요";
-    els.guide.style.color = "#ff6b00";
     els.targetArea.style.display = "block";
   }
   setTimeout(() => els.scanInput.focus(), 100);
