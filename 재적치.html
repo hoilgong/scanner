@@ -3,69 +3,90 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kurly PDA (Final v3)</title>
+<title>Kurly Relocation PDA</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
 <style>
-  :root { --kurly-purple: #5f0080; --kurly-orange: #ff6b00; --bg-gray: #f4f4f4; }
+  :root { --kurly-purple: #5f0080; --kurly-orange: #ff6b00; --bg-gray: #f4f4f4; --text-black: #333; }
   * { box-sizing: border-box; }
   body { height: 100vh; margin: 0; padding: 10px; overflow: hidden; font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-gray); display: flex; flex-direction: column; align-items: center; }
   
   .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; flex-shrink: 0; }
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
+  .status-btn { font-size: 12px; background: white; padding: 6px 12px; border-radius: 20px; color: #555; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; border: 1px solid #ddd; }
   
-  /* 디버그 바: 스캔 값이 잘 들어오는지 눈으로 확인용 */
-  #debug-bar {
-      width: 100%; max-width: 400px; background: #222; color: #0f0; 
-      font-family: monospace; padding: 5px; font-size: 12px; margin-bottom: 5px;
-      border-radius: 4px; min-height: 24px; text-align: center;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-
+  #worker-display { width: 100%; max-width: 400px; text-align: right; font-size: 12px; color: #666; margin-bottom: 5px; font-weight: 500; flex-shrink: 0; }
+  
+  /* 단계바 */
   #step-bar { width: 100%; max-width: 400px; display: flex; margin-bottom: 15px; flex-shrink: 0; background: #ddd; border-radius: 8px; overflow: hidden; }
   .step { flex: 1; text-align: center; padding: 10px 0; font-size: 14px; font-weight: bold; color: #999; }
   .step.active { background: var(--kurly-purple); color: white; }
   .step.active-2 { background: var(--kurly-orange); color: white; }
   
-  /* 스캔 표시 박스 (입력창 아님 - 터치해도 키보드 안 뜸) */
-  #scan-display-box { 
-    width: 100%; max-width: 400px; padding: 15px; font-size: 20px; 
-    border: 2px solid var(--kurly-purple); border-radius: 8px; 
-    text-align: center; font-weight: bold; background: white; color: #333; margin-bottom: 15px;
-    height: 60px; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  /* 입력창 (수정됨: 버튼과 나란히 배치) */
+  #input-box { width: 100%; max-width: 400px; margin-bottom: 15px; flex-shrink: 0; display: flex; gap: 8px; }
+  
+  #scan-input { 
+    flex-grow: 1; padding: 15px; font-size: 18px; border: 2px solid var(--kurly-purple); 
+    border-radius: 8px; outline: none; text-align: center; font-weight: bold; 
+    background: white; color: #333;
   }
+  #scan-input:focus { box-shadow: 0 0 8px rgba(95,0,128,0.3); border-color: var(--kurly-purple); }
+
+  /* 키보드 토글 버튼 (신규) */
+  #kbd-toggle {
+    width: 54px; display: flex; justify-content: center; align-items: center;
+    background: white; border: 2px solid #ddd; border-radius: 8px;
+    font-size: 24px; cursor: pointer; transition: 0.2s;
+  }
+  #kbd-toggle.active { background: #eee; border-color: #999; }
   
   #guide-msg { width: 100%; max-width: 400px; text-align: center; font-size: 18px; font-weight: 800; margin-bottom: 10px; color: var(--kurly-purple); flex-shrink: 0; }
 
+  /* 정보 카드 */
   #info-card { flex-grow: 1; width: 100%; max-width: 400px; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: start; overflow-y: auto; }
-  .val { font-size: 20px; font-weight: 700; color: #333; word-break: break-all; min-height: 30px;}
+  .row { margin-bottom: 20px; }
+  .label { font-size: 13px; color: #888; margin-bottom: 5px; }
+  .val { font-size: 20px; font-weight: 700; color: #333; word-break: break-all; }
   
-  /* 팝업 및 알림 */
+  .target-box { background: #fff4e6; padding: 15px; border-radius: 8px; border: 2px solid var(--kurly-orange); text-align: center; display: none; margin-top: 10px; }
+  .target-val { font-size: 36px; font-weight: 900; color: var(--kurly-orange); }
+  
+  /* 팝업 공통 */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: center; }
-  #msg-overlay { z-index: 2001; color: white; pointer-events: none; flex-direction: column; }
+  .modal-box { background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+  .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; }
+  .modal-input { width: 100%; padding: 10px; font-size: 20px; text-align: center; border: 2px solid var(--kurly-purple); border-radius: 8px; margin-bottom: 20px; font-weight: bold; color: var(--text-black); }
+  .modal-btn { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; background: var(--kurly-purple); color: white; border: none; border-radius: 8px; cursor: pointer; }
+  
+  #msg-overlay { z-index: 2001; color: white; pointer-events: none; }
   #msg-icon { font-size: 60px; margin-bottom: 20px; }
   #msg-text { font-size: 24px; font-weight: bold; }
-  
-  /* 수량 입력 UI 스타일 */
-  .inline-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 5px; animation: fadeIn 0.3s; }
-  .inline-qty-input { 
-      width: 80px; padding: 8px; font-size: 22px; text-align: center; 
-      border: 2px solid var(--kurly-purple); border-radius: 6px; 
-      font-weight: bold; color: var(--kurly-purple);
-      background: #fdfdfd; outline: none;
-  }
-  .inline-confirm-btn {
-      padding: 8px 16px; background: var(--kurly-purple); color: white;
-      border: none; border-radius: 6px; font-weight: bold; font-size: 14px;
-      cursor: pointer;
-  }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+  #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; }
 </style>
 </head>
 <body>
 
-<div id="debug-bar">시스템 준비 완료 (1234로 테스트하세요)</div>
+<div id="login-modal" class="modal-overlay" style="display: flex;">
+  <div class="modal-box">
+    <div class="logo" style="margin-bottom: 20px; color: #5f0080;">Kurly Work (PDA)</div>
+    <div class="modal-title">작업자 이름 입력</div>
+    <input type="text" id="worker-input" class="modal-input" placeholder="이름">
+    <button class="modal-btn" onclick="confirmWorker()">작업 시작</button>
+  </div>
+</div>
+
+<div id="loading">
+  <p style="color:#5f0080; font-weight:bold;">데이터 동기화 중...</p>
+</div>
+
+<div id="qty-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title" id="qty-title"></div>
+    <input type="tel" id="qty-input" class="modal-input" value="1">
+    <button class="modal-btn" onclick="confirmQty()">확인</button>
+  </div>
+</div>
 
 <div id="msg-overlay" class="modal-overlay" style="background: rgba(0,0,0,0.8);">
   <div id="msg-icon">✅</div>
@@ -73,260 +94,239 @@
 </div>
 
 <div class="header">
-  <div class="logo">재적치 PDA</div>
-  <div style="font-size:12px; color:#666;">v3.0 전역감지</div>
+  <div class="logo">재적치 (PDA)</div>
+  <div id="refresh-btn" class="status-btn">
+    <span id="db-status">대기</span> 🔄
+  </div>
 </div>
+
+<div id="worker-display"></div>
 
 <div id="step-bar">
   <div id="step1" class="step active">1. 상품 스캔</div>
   <div id="step2" class="step">2. 지번 스캔</div>
 </div>
 
-<div id="guide-msg">화면을 켜고<br>바로 스캔하세요</div>
+<div id="guide-msg">상품 바코드를 스캔하세요</div>
 
-<div id="scan-display-box">
-  <span id="scan-text" style="color:#ccc;">스캔 대기중...</span>
+<div id="input-box">
+  <input type="text" id="scan-input" inputmode="none" placeholder="스캔 (키보드 끔)" autocomplete="off">
+  <div id="kbd-toggle" onclick="toggleKeyboard()">⌨️</div>
 </div>
 
 <div id="info-card">
   <div class="row">
-    <div style="font-size:13px; color:#888;">상품명 (수량)</div>
+    <div class="label">상품명 (수량)</div>
     <div class="val" id="p-name">-</div>
   </div>
   
-  <div id="target-area" style="background:#fff4e6; padding:15px; border-radius:8px; border:2px solid #ff6b00; text-align:center; display:none; margin-top:10px;">
-    <div style="font-size:13px; color:#d9480f">⬇️ 이 지번에 적치</div>
-    <div style="font-size:36px; font-weight:900; color:#ff6b00;" id="p-jibun">-</div>
+  <div id="target-area" class="target-box">
+    <div class="label" style="color:#d9480f">⬇️ 이 지번에 적치</div>
+    <div class="target-val" id="p-jibun">-</div>
   </div>
 </div>
 
 <script>
-// [테스트 데이터] 로딩 실패 시 작동
-const DUMMY_DATA = {
-    "1234": ["신라면 봉지", "P001", "A-01-01", "냉장"],
-    "8801": ["코카콜라 500ml", "P002", "B-02-03", "상온"]
-};
-
-// 구글 앱스 스크립트 URL (본인 것으로 교체 필요)
+// 재적치용 URL
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxlnPMPZAWhPum7f-yl3EVVn_wFqrh_v0GB6Edncx20eglrylv0iDbdET7o_jaPfj3e/exec";
 
-let skuMap = {}; 
+let skuMap = {};
 let currentStep = 1; 
 let currentProduct = null;
-let currentWorker = "작업자"; 
-
-// 스캔 버퍼 변수 (매우 중요)
-let scanBuffer = "";
-let scanTimer = null;
+let currentWorker = ""; 
 
 const els = {
-    debugBar: document.getElementById("debug-bar"),
-    scanText: document.getElementById("scan-text"),
-    scanBox: document.getElementById("scan-display-box"),
-    step1: document.getElementById("step1"),
-    step2: document.getElementById("step2"),
-    guide: document.getElementById("guide-msg"),
-    pName: document.getElementById("p-name"),
-    pJibun: document.getElementById("p-jibun"),
-    targetArea: document.getElementById("target-area"),
-    msgOverlay: document.getElementById("msg-overlay"),
-    msgIcon: document.getElementById("msg-icon"),
-    msgText: document.getElementById("msg-text")
+  loginModal: document.getElementById("login-modal"),
+  workerInput: document.getElementById("worker-input"),
+  workerDisplay: document.getElementById("worker-display"),
+  step1: document.getElementById("step1"),
+  step2: document.getElementById("step2"),
+  guide: document.getElementById("guide-msg"),
+  scanInput: document.getElementById("scan-input"),
+  kbdToggle: document.getElementById("kbd-toggle"), // 토글 버튼
+  pName: document.getElementById("p-name"),
+  pJibun: document.getElementById("p-jibun"),
+  targetArea: document.getElementById("target-area"),
+  loading: document.getElementById("loading"),
+  qtyModal: document.getElementById("qty-modal"),
+  qtyInput: document.getElementById("qty-input"),
+  qtyTitle: document.getElementById("qty-title"),
+  msgOverlay: document.getElementById("msg-overlay"),
+  msgIcon: document.getElementById("msg-icon"),
+  msgText: document.getElementById("msg-text"),
+  dbStatus: document.getElementById("db-status"),
+  refreshBtn: document.getElementById("refresh-btn")
 };
 
-// 초기화
-window.onload = function() {
-    loadData();
-};
+// 0. 키보드 토글 기능 (비상시 수기 입력용)
+function toggleKeyboard() {
+  const el = els.scanInput;
+  // 현재 none이면 text로 변경
+  if (el.getAttribute('inputmode') === 'none') {
+    el.setAttribute('inputmode', 'text');
+    el.placeholder = "직접 입력하세요";
+    els.kbdToggle.innerText = "📝"; // 아이콘 변경
+    els.kbdToggle.classList.add("active");
+  } else {
+    el.setAttribute('inputmode', 'none');
+    el.placeholder = "스캔 (키보드 끔)";
+    els.kbdToggle.innerText = "⌨️";
+    els.kbdToggle.classList.remove("active");
+  }
+  // 변경 후 즉시 포커스
+  el.blur();
+  setTimeout(() => el.focus(), 50);
+}
 
+// 1. 작업자 로그인
+function confirmWorker() {
+  const name = els.workerInput.value.trim();
+  if(!name) { alert("이름을 입력해주세요!"); return; }
+  currentWorker = name;
+  els.workerDisplay.innerText = "작업자: " + name; 
+  els.loginModal.style.display = "none"; 
+  loadData();
+}
+
+// 2. 데이터 로드
 async function loadData() {
+  els.loading.style.display = 'flex';
   try {
-    els.debugBar.innerText = "데이터 로딩중...";
     const res = await fetch(GAS_URL + "?t=" + Date.now());
     const data = await res.json();
     skuMap = data;
-    els.debugBar.innerText = "데이터 로드 완료 (" + Object.keys(data).length + "개)";
+    els.dbStatus.innerText = Object.keys(data).length + "개";
+    els.loading.style.display = 'none';
+    resetToStep1();
   } catch(e) {
-    console.error(e);
-    skuMap = DUMMY_DATA;
-    els.debugBar.innerText = "⚠️ 서버연결 실패. 테스트모드(1234)";
+    alert("로드 실패");
+    els.loading.style.display = 'none';
   }
 }
 
-// ==========================================
-// 🔥 핵심 로직: 전역 키보드 감지
-// ==========================================
-document.addEventListener("keydown", (e) => {
-    // 1. 수량 입력 중(input 포커스)일 때는 스캔 로직 무시 (사용자가 숫자 치는 중)
-    if (e.target.tagName === "INPUT") return;
+// 3. 입력 처리 핸들러
+function handleInput(value) {
+  const code = String(value).trim();
+  if (!code) return;
 
-    const char = e.key;
-
-    // 2. Enter 키 감지 (스캐너가 엔터를 보내주는 경우)
-    if (char === "Enter") {
-        if (scanBuffer.length > 0) {
-            processScan(scanBuffer);
-            scanBuffer = "";
-        }
-        return;
-    }
-
-    // 3. 일반 문자 감지 (특수키 제외)
-    if (char.length === 1) {
-        scanBuffer += char;
-        
-        // 화면에 타이핑 되는 것 보여주기
-        els.scanText.innerText = scanBuffer;
-        els.scanText.style.color = "#333";
-        els.debugBar.innerText = "입력중: " + scanBuffer;
-
-        // 4. 타이머 리셋 (0.2초 동안 입력 없으면 스캔 끝난 것으로 간주)
-        clearTimeout(scanTimer);
-        scanTimer = setTimeout(() => {
-            if (scanBuffer.length > 0) {
-                processScan(scanBuffer);
-                scanBuffer = "";
-            }
-        }, 200); // 200ms 딜레이
-    }
-});
-
-function processScan(code) {
-    code = code.trim();
-    els.debugBar.innerText = "SCANNED: " + code;
-    els.scanText.innerText = code;
-
-    // "반짝" 효과
-    els.scanBox.style.backgroundColor = "#e6f7ff";
-    els.scanBox.style.borderColor = "#007AFF";
-    setTimeout(() => {
-        els.scanBox.style.backgroundColor = "white";
-        els.scanBox.style.borderColor = currentStep === 1 ? "#5f0080" : "#ff6b00";
-    }, 300);
-
-    if (currentStep === 1) {
-        handleProductScan(code);
-    } else {
-        handleLocationScan(code);
-    }
+  if (currentStep === 1) handleProductScan(code);
+  else handleLocationScan(code);
+  
+  els.scanInput.value = ""; 
 }
 
 function handleProductScan(code) {
-    const item = skuMap[code];
-    if (item) {
-        // 데이터 포맷: [상품명, 코드, 지번, 존]
-        currentProduct = { code: item[1], name: item[0], jibun: item[2], qty: 1 };
-        
-        // 성공 시 수량 입력 모드로 전환
-        showInlineQtyInput(item[0]); 
-    } else {
-        showMessage("❌", "미등록 상품", "red");
-        setTimeout(() => { 
-            els.scanText.innerText = "스캔 대기중..."; 
-            els.scanText.style.color = "#ccc"; 
-        }, 1000);
-    }
+  const item = skuMap[code];
+  if(item) {
+    currentProduct = { code: item[1], name: item[0], jibun: item[2], zone: item[3], qty: 1 };
+    openQtyModal(item[0]); 
+  } else {
+    showMessage("❌", "미등록 상품", "red");
+    setTimeout(() => els.scanInput.focus(), 100);
+  }
 }
 
-function showInlineQtyInput(prodName) {
-    // 정보창을 수량 입력 UI로 변경
-    els.pName.innerHTML = `
-        <div style="font-size:18px; margin-bottom:8px;">${prodName}</div>
-        <div class="inline-wrapper">
-            <span style="font-size:14px; color:#666;">수량:</span>
-            <input type="tel" id="inline-qty" class="inline-qty-input" value="1" inputmode="numeric" pattern="[0-9]*">
-            <button class="inline-confirm-btn" onclick="confirmQty()">확인</button>
-        </div>
-    `;
-    els.guide.innerText = "수량을 입력하세요";
-    els.guide.style.color = "#333";
-
-    // 수량 입력창에 포커스 (여기서 키보드가 뜸)
-    const inlineInput = document.getElementById("inline-qty");
-    
-    // 수량 입력창 전용 엔터키 처리
-    inlineInput.addEventListener("keydown", (e) => {
-        if(e.key === "Enter") confirmQty();
-    });
-
-    setTimeout(() => {
-        inlineInput.focus();
-        inlineInput.select(); // 숫자 전체 선택
-    }, 100);
+function openQtyModal(prodName) {
+  els.qtyTitle.innerHTML = `<span style="font-size:14px; color:#666">${prodName}</span><br>수량 입력`;
+  els.qtyInput.value = "1"; 
+  els.qtyModal.style.display = "flex";
+  setTimeout(() => els.qtyInput.focus(), 100); 
 }
 
 function confirmQty() {
-    const inlineInput = document.getElementById("inline-qty");
-    let val = "1";
-    if (inlineInput) val = inlineInput.value.trim();
-    if (!val || isNaN(val)) val = "1";
-    
-    currentProduct.qty = val;
+  let val = els.qtyInput.value.trim();
+  if(!val || isNaN(val) || Number(val) < 1) val = "1";
+  currentProduct.qty = val;
+  els.qtyModal.style.display = "none";
+  moveToStep2();
+}
 
-    // 화면 복구 (텍스트로 표시)
-    els.pName.innerHTML = `
-        <div>${currentProduct.name}</div>
-        <div style="font-size:16px; color:#5f0080; margin-top:5px;">(${currentProduct.qty}개)</div>
-    `;
-    
-    els.pJibun.innerText = currentProduct.jibun;
-    setStep(2);
-    
-    // 다음 스캔을 위한 UI 초기화
-    els.scanText.innerText = "지번 스캔...";
-    els.scanText.style.color = "#ccc";
+function moveToStep2() {
+  els.pName.innerText = `${currentProduct.name} (${currentProduct.qty}개)`;
+  els.pJibun.innerText = currentProduct.jibun;
+  setStep(2); 
 }
 
 function handleLocationScan(scannedJibun) {
-    const targetJibun = currentProduct.jibun;
-    
-    // 공백 제거 비교
-    if (scannedJibun.replace(/\s/g, "") === targetJibun.replace(/\s/g, "")) {
-        showMessage("✅", "완료!", "green");
-        
-        // (선택) 여기서 서버 전송 로직 수행 (saveLog)
-        
-        setTimeout(() => resetToStep1(), 1000);
-    } else {
-        showMessage("⚠️", "지번 불일치", "#ff6b00");
-    }
+  const targetJibun = currentProduct.jibun;
+  if(scannedJibun.replace(/\s/g, "") === targetJibun.replace(/\s/g, "")) {
+    saveLog(scannedJibun);
+    showMessage("✅", "완료!", "green");
+    setTimeout(() => { resetToStep1(); }, 1500);
+  } else {
+    showMessage("⚠️", "지번 불일치", "#ff6b00");
+    setTimeout(() => els.scanInput.focus(), 100);
+  }
+}
+
+function saveLog(scannedLoc) {
+  fetch(GAS_URL, {
+    method: "POST",
+    mode: "no-cors",
+    body: JSON.stringify({
+      workerName: currentWorker, 
+      prodCode: currentProduct.code,
+      prodName: currentProduct.name,
+      targetJibun: currentProduct.jibun,
+      scannedJibun: scannedLoc, 
+      qty: currentProduct.qty 
+    })
+  });
 }
 
 function setStep(step) {
-    currentStep = step;
-    if (step === 1) {
-        els.step1.classList.add("active");
-        els.step2.classList.remove("active-2");
-        els.guide.innerText = "상품 바코드를 스캔하세요";
-        els.guide.style.color = "#5f0080";
-        els.targetArea.style.display = "none";
-        els.scanBox.style.borderColor = "#5f0080";
-    } else {
-        els.step1.classList.remove("active");
-        els.step2.classList.add("active-2");
-        els.guide.innerText = "지번 바코드를 스캔하세요";
-        els.guide.style.color = "#ff6b00";
-        els.targetArea.style.display = "block";
-        els.scanBox.style.borderColor = "#ff6b00";
-    }
+  currentStep = step;
+  if(step === 1) {
+    els.step1.classList.add("active");
+    els.step2.classList.remove("active-2");
+    els.scanInput.style.borderColor = "#5f0080"; 
+    els.guide.innerText = "상품 바코드를 스캔하세요";
+    els.guide.style.color = "#5f0080";
+    els.targetArea.style.display = "none";
+  } else {
+    els.step1.classList.remove("active");
+    els.step2.classList.add("active-2");
+    els.scanInput.style.borderColor = "#ff6b00"; 
+    els.guide.innerText = "지번 바코드를 스캔하세요";
+    els.guide.style.color = "#ff6b00";
+    els.targetArea.style.display = "block";
+  }
+  setTimeout(() => els.scanInput.focus(), 100);
 }
 
 function resetToStep1() {
-    setStep(1);
-    els.pName.innerText = "-";
-    els.pJibun.innerText = "-";
-    els.scanText.innerText = "스캔 대기중...";
-    els.scanText.style.color = "#ccc";
-    currentProduct = null;
+  setStep(1);
+  els.pName.innerText = "-";
+  els.pJibun.innerText = "-";
+  currentProduct = null;
 }
 
 function showMessage(icon, text, color) {
-    els.msgIcon.innerText = icon;
-    els.msgText.innerHTML = text;
-    els.msgText.style.color = color;
-    els.msgOverlay.style.display = 'flex';
-    setTimeout(() => els.msgOverlay.style.display = 'none', 1000);
+  els.msgIcon.innerText = icon;
+  els.msgText.innerHTML = text;
+  els.msgText.style.color = color;
+  els.msgOverlay.style.display = 'flex';
+  setTimeout(() => els.msgOverlay.style.display = 'none', 1500);
 }
+
+// 이벤트 리스너
+els.scanInput.addEventListener("keypress", (e) => {
+  if(e.key === "Enter") handleInput(els.scanInput.value);
+});
+els.qtyInput.addEventListener("keypress", (e) => { if(e.key === "Enter") confirmQty(); });
+els.workerInput.addEventListener("keypress", (e) => { if(e.key === "Enter") confirmWorker(); });
+els.refreshBtn.addEventListener("click", () => { if(confirm("새로고침?")) loadData(); });
+
+// 화면 터치 시 포커스 유지 (단, 토글 버튼 클릭 시는 제외)
+document.addEventListener("click", (e) => {
+  if(els.loginModal.style.display !== "none" || els.qtyModal.style.display !== "none") return;
+  
+  // 버튼이나 인풋을 누른게 아니면 메인 인풋으로 포커스
+  if(!e.target.closest("button") && !e.target.closest("input") && !e.target.closest("#kbd-toggle")) {
+    els.scanInput.focus();
+  }
+});
+
 </script>
 </body>
 </html>
