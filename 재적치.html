@@ -9,8 +9,7 @@
 <style>
   :root { --kurly-purple: #5f0080; --kurly-orange: #ff6b00; --bg-gray: #f4f4f4; --text-black: #333; }
   * { box-sizing: border-box; }
-  
-  /* 화면 전체 꽉 채우기 & 스크롤 방지 */
+   
   body { 
     height: 100vh; margin: 0; padding: 0; 
     overflow: hidden; 
@@ -18,22 +17,43 @@
     background-color: var(--bg-gray); 
     display: flex; flex-direction: column; 
   }
-  
+   
+  /* ▼▼▼ [수정됨] 헤더 높이 및 여백 수정 (잘림 방지) ▼▼▼ */
   .header { 
-    padding: 10px; width: 100%; display: flex; justify-content: space-between; align-items: center; 
-    background-color: white; border-bottom: 1px solid #ddd; flex-shrink: 0; height: 50px;
+    padding: 10px 15px; /* 내부 여백 확보 */
+    width: 100%; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    background-color: white; 
+    border-bottom: 1px solid #ddd; 
+    flex-shrink: 0; 
+    min-height: 60px; /* 고정 높이 대신 최소 높이 설정 */
+    height: auto;
   }
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
-  .status-btn { font-size: 12px; background: white; padding: 5px 10px; border-radius: 20px; color: #555; font-weight: bold; border: 1px solid #ddd; cursor: pointer; }
-  
+  .status-btn { 
+    font-size: 13px; 
+    background: white; 
+    padding: 6px 12px; 
+    border-radius: 20px; 
+    color: #555; 
+    font-weight: bold; 
+    border: 1px solid #ddd; 
+    cursor: pointer; 
+    white-space: nowrap; /* 버튼 내부 줄바꿈 방지 */
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+   
   #worker-display { width: 100%; text-align: right; font-size: 12px; color: #666; padding: 5px 10px; background: #f9f9f9; flex-shrink: 0; }
-  
+   
   #step-bar { display: flex; width: 100%; background: #ddd; height: 40px; flex-shrink: 0; }
   .step { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: #999; }
   .step.active { background: var(--kurly-purple); color: white; }
   .step.active-2 { background: var(--kurly-orange); color: white; }
 
-  /* 중앙 컨텐츠 영역 */
   #main-container {
     flex-grow: 1;
     display: flex;
@@ -44,30 +64,27 @@
     justify-content: flex-start; 
   }
 
-  /* 입력창 영역 (항상 하단) */
   #input-wrapper {
     width: 100%;
     padding: 10px;
     background: white;
     border-top: 1px solid #ddd;
     flex-shrink: 0;
+    transition: all 0.3s ease; /* 위치 변경 시 부드럽게 */
   }
   #scan-input { 
     width: 100%; padding: 15px; font-size: 18px; border: 2px solid var(--kurly-purple); 
     border-radius: 8px; outline: none; text-align: center; font-weight: bold; 
   }
-  
+   
   #info-card {
     background: white; border-radius: 10px; padding: 15px; 
     box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
     width: 100%; height: 100%;
     display: flex; flex-direction: column;
   }
-  .row { margin-bottom: 10px; }
-  .label { font-size: 13px; color: #888; }
-  .val { font-size: 18px; font-weight: 700; color: #333; word-break: break-all; }
 
-  /* 2단계 전용 타겟 박스 (초기엔 숨김) */
+  /* 2단계 전용 타겟 박스 */
   #target-area {
     display: none; 
     flex-grow: 1;
@@ -78,44 +95,74 @@
     justify-content: center;
     align-items: center;
     text-align: center;
-    width: 100%; /* 너비 100% 보장 */
+    width: 100%; 
+    overflow: hidden; 
   }
 
-  /* ▼▼▼ [수정됨] 지번 텍스트 스타일 ▼▼▼ */
   .target-val { 
-    font-size: 11vw; /* 18vw -> 11vw 로 축소 (화면 너비 고려) */
+    font-size: 15vw; 
     font-weight: 900; 
-    color: var(--kurly-orange); 
-    line-height: 1.1; 
+    color: var(--kurly-orange);
+    line-height: 1.1;
     margin-top: 5px;
-    
-    /* 긴 텍스트 줄바꿈 처리 */
-    word-break: break-all; 
-    white-space: normal;
+    white-space: nowrap; 
+    word-break: normal;
     text-align: center;
-    max-width: 100%;
-    padding: 0 5px; /* 좌우 여백 */
+    width: 100%;
+    overflow: hidden; 
+    padding: 0 5px; 
   }
 
   /* =========================================
-     [모드별 스타일] 
-     ========================================= */
-  body.mode-step1 #guide-msg { display: block; text-align: center; color: var(--kurly-purple); font-weight: 800; margin-bottom: 10px; }
-  body.mode-step1 #target-area { display: none; }
-  body.mode-step1 #scan-input { border-color: var(--kurly-purple); }
-
-  /* 2단계 (지번 스캔) */
-  body.mode-step2 .header { display: none !important; }         
-  body.mode-step2 #worker-display { display: none !important; } 
-  body.mode-step2 #step-bar { display: none !important; }       
-  body.mode-step2 #guide-msg { display: none !important; }      
+      [모드 1: 상품 스캔 - 수정됨] 
+      ========================================= */
+  /* 정보 카드 숨김 */
+  body.mode-step1 #info-card { display: none !important; }
   
-  body.mode-step2 #main-container { 
-    padding: 0; 
-    justify-content: flex-end; /* 아래 정렬 */
-    background: #fff4e6; 
+  /* 가이드 메시지 (입력창 위로 배치하기 위해 스타일 조정) */
+  body.mode-step1 #guide-msg { 
+    display: block; 
+    text-align: center; 
+    color: var(--kurly-purple); 
+    font-weight: 800; 
+    font-size: 18px;
+    margin-bottom: 15px; 
+  }
+
+  /* 입력창 중앙 정렬 */
+  body.mode-step1 #input-wrapper {
+    position: absolute;
+    top: 55%; 
+    left: 50%;
+    transform: translate(-50%, -50%); /* 정확한 정중앙 */
+    border: none;
+    background: transparent;
+    width: 90%; /* 좌우 여백 */
+    max-width: 400px;
+    padding: 0;
   }
   
+  body.mode-step1 #scan-input {
+    box-shadow: 0 4px 15px rgba(95, 0, 128, 0.2); /* 약간의 그림자 추가 */
+  }
+
+  body.mode-step1 #target-area { display: none; }
+
+
+  /* =========================================
+      [모드 2: 지번 스캔 - 기존 유지] 
+      ========================================= */
+  body.mode-step2 .header { display: none !important; }          
+  body.mode-step2 #worker-display { display: none !important; } 
+  body.mode-step2 #step-bar { display: none !important; }        
+  body.mode-step2 #guide-msg { display: none !important; }       
+   
+  body.mode-step2 #main-container { 
+    padding: 0; 
+    justify-content: flex-end; 
+    background: #fff4e6; 
+  }
+   
   body.mode-step2 #info-card { 
     border-radius: 0; box-shadow: none; padding: 0 10px; 
     background: transparent; 
@@ -123,9 +170,9 @@
     justify-content: flex-end; 
     margin-bottom: 5px; 
   }
-  
+   
   body.mode-step2 .row { display: none; } 
-  
+   
   #mini-p-info { display: none; font-size: 15px; text-align: center; color: #555; margin-bottom: 20px; font-weight: 500;}
   body.mode-step2 #mini-p-info { display: block; }
 
@@ -136,8 +183,8 @@
     justify-content: flex-end; 
     padding-bottom: 0;
   }
-  
-  body.mode-step2 #input-wrapper { background: #fff4e6; border-top: none; padding-bottom: 15px; } 
+   
+  body.mode-step2 #input-wrapper { background: #fff4e6; border-top: none; padding-bottom: 15px; position: relative; top: 0; left: 0; transform: none; width: 100%;} 
   body.mode-step2 #scan-input { border-color: var(--kurly-orange); background: white; box-shadow: 0 -2px 10px rgba(255, 107, 0, 0.1); }
 
   /* 모달 & 기타 */
@@ -145,7 +192,7 @@
   .modal-box { background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 12px; text-align: center; }
   .modal-input { width: 100%; padding: 10px; font-size: 20px; text-align: center; border: 2px solid var(--kurly-purple); border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
   .modal-btn { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; background: var(--kurly-purple); color: white; border: none; border-radius: 8px; cursor: pointer; }
-  
+   
   #msg-overlay { z-index: 2001; color: white; pointer-events: none; }
   #msg-icon { font-size: 60px; margin-bottom: 20px; }
   #msg-text { font-size: 24px; font-weight: bold; }
@@ -179,7 +226,10 @@
 
 <div class="header">
   <div class="logo">재적치 (PDA)</div>
-  <div class="status-btn" id="refresh-btn"><span id="db-status">0개</span> 🔄</div>
+  <div class="status-btn" id="refresh-btn">
+    <span id="db-status">0개</span>
+    <span>🔄</span>
+  </div>
 </div>
 
 <div id="worker-display"></div>
@@ -190,7 +240,6 @@
 </div>
 
 <div id="main-container">
-  <div id="guide-msg">상품 바코드를 스캔하세요</div>
   
   <div id="info-card">
     <div class="row">
@@ -208,6 +257,7 @@
 </div>
 
 <div id="input-wrapper">
+  <div id="guide-msg">상품 바코드를 스캔하세요</div>
   <input type="text" id="scan-input" placeholder="스캔..." autocomplete="off">
 </div>
 
@@ -300,7 +350,15 @@ function confirmQty() {
 function moveToStep2() {
   els.pName.innerText = `${currentProduct.name} (${currentProduct.qty}개)`;
   els.miniInfo.innerText = `${currentProduct.name} (${currentProduct.qty}개)`;
-  els.pJibun.innerText = currentProduct.jibun;
+  
+  const jibunText = currentProduct.jibun;
+  els.pJibun.innerText = jibunText;
+  
+  // 글자 크기 자동 조절 (이전 요청사항 유지)
+  const len = jibunText.length;
+  const calcSize = Math.min(20, 115 / Math.max(1, len));
+  els.pJibun.style.fontSize = calcSize + "vw";
+
   setStep(2); 
 }
 
