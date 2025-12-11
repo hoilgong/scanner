@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kurly Relocation PDA (Inline)</title>
+<title>Kurly Relocation PDA (Fix)</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
 <style>
@@ -22,20 +22,25 @@
   .step.active { background: var(--kurly-purple); color: white; }
   .step.active-2 { background: var(--kurly-orange); color: white; }
   
-  #input-box { width: 100%; max-width: 400px; margin-bottom: 15px; flex-shrink: 0; }
+  /* 입력창과 버튼을 감싸는 박스 */
+  #input-box { width: 100%; max-width: 400px; margin-bottom: 15px; flex-shrink: 0; display: flex; gap: 8px; }
   
-  /* 메인 스캔 입력창 */
   #scan-input { 
-    width: 100%; padding: 15px; font-size: 18px; border: 2px solid var(--kurly-purple); 
+    flex-grow: 1; padding: 15px; font-size: 18px; border: 2px solid var(--kurly-purple); 
     border-radius: 8px; outline: none; text-align: center; font-weight: bold; 
     background: white; color: #333;
     -webkit-tap-highlight-color: transparent;
   }
+  /* 수동 검색 버튼 */
+  #scan-btn {
+    width: 60px; background: var(--kurly-purple); color: white; border: none;
+    border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer;
+  }
+  
   #scan-input:focus { box-shadow: 0 0 8px rgba(95,0,128,0.3); border-color: var(--kurly-purple); }
   
   #guide-msg { width: 100%; max-width: 400px; text-align: center; font-size: 18px; font-weight: 800; margin-bottom: 10px; color: var(--kurly-purple); flex-shrink: 0; }
 
-  /* 정보 카드 영역 */
   #info-card { flex-grow: 1; width: 100%; max-width: 400px; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: start; overflow-y: auto; }
   .row { margin-bottom: 20px; }
   .label { font-size: 13px; color: #888; margin-bottom: 5px; }
@@ -44,7 +49,6 @@
   .target-box { background: #fff4e6; padding: 15px; border-radius: 8px; border: 2px solid var(--kurly-orange); text-align: center; display: none; margin-top: 10px; }
   .target-val { font-size: 36px; font-weight: 900; color: var(--kurly-orange); }
   
-  /* 팝업 공통 */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: center; }
   .modal-box { background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
   .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; }
@@ -56,7 +60,7 @@
   #msg-text { font-size: 24px; font-weight: bold; }
   #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; }
 
-  /* [추가] 인라인 입력창 스타일 */
+  /* 인라인 입력창 스타일 */
   .inline-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
   .inline-qty-input { 
       width: 80px; padding: 8px; font-size: 22px; text-align: center; 
@@ -109,6 +113,7 @@
 
 <div id="input-box">
   <input type="text" id="scan-input" inputmode="none" placeholder="스캔..." autocomplete="off">
+  <button id="scan-btn" onclick="handleInput()">확인</button>
 </div>
 
 <div id="info-card">
@@ -124,7 +129,13 @@
 </div>
 
 <script>
-// 재적치용 URL
+// 테스트용 더미 데이터 (로드 실패시 사용됨)
+const DUMMY_DATA = {
+    "1234": ["테스트상품(신라면)", "P001", "A-01-01", "냉장"],
+    "8801043014856": ["농심 육개장", "P002", "B-02-03", "상온"]
+};
+
+// 재적치용 URL (여기가 비어있거나 잘못되면 더미 데이터를 씁니다)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxlnPMPZAWhPum7f-yl3EVVn_wFqrh_v0GB6Edncx20eglrylv0iDbdET7o_jaPfj3e/exec";
 
 let skuMap = {};
@@ -165,13 +176,24 @@ async function loadData() {
   try {
     const res = await fetch(GAS_URL + "?t=" + Date.now());
     const data = await res.json();
+    
+    // 데이터 구조 체크 (배열인지 객체인지)
+    if (Object.keys(data).length === 0) {
+        throw new Error("빈 데이터");
+    }
+    
     skuMap = data;
     els.dbStatus.innerText = Object.keys(data).length + "개";
+    
+  } catch(e) {
+    console.error(e);
+    // 실패시 테스트 데이터 로드
+    skuMap = DUMMY_DATA;
+    els.dbStatus.innerText = "테스트모드";
+    alert("서버 연결 실패. 테스트 데이터(1234)를 사용합니다.");
+  } finally {
     els.loading.style.display = 'none';
     resetToStep1(); 
-  } catch(e) {
-    alert("로드 실패");
-    els.loading.style.display = 'none';
   }
 }
 
@@ -179,7 +201,10 @@ function handleInput() {
   const code = String(els.scanInput.value).trim();
   els.scanInput.value = ""; // 입력창 즉시 비우기
   
-  if (!code) return;
+  if (!code) {
+      // 엔터를 쳤는데 값이 비어있다면?
+      return; 
+  }
 
   if (currentStep === 1) handleProductScan(code);
   else handleLocationScan(code);
@@ -187,20 +212,20 @@ function handleInput() {
 
 function handleProductScan(code) {
   const item = skuMap[code];
+  
   if(item) {
+    // item 구조: [상품명, 코드, 지번, 존]
     currentProduct = { code: item[1], name: item[0], jibun: item[2], zone: item[3], qty: 1 };
-    
-    // [변경] 모달 대신 인라인 입력 함수 호출
     showInlineQtyInput(item[0]); 
   } else {
-    showMessage("❌", "미등록 상품", "red");
+    // 디버깅용 알림
+    alert("등록되지 않은 바코드입니다: " + code + "\n(1234로 테스트해보세요)");
+    showMessage("❌", "미등록", "red");
     keepFocus();
   }
 }
 
-// [핵심 기능] 정보창 내부에 수량 입력칸을 즉시 생성
 function showInlineQtyInput(prodName) {
-  // 1. UI 교체: 상품명 아래에 인라인 입력창 삽입
   els.pName.innerHTML = `
     <div style="font-size:18px; margin-bottom:8px;">${prodName}</div>
     <div class="inline-wrapper">
@@ -209,43 +234,31 @@ function showInlineQtyInput(prodName) {
       <button class="inline-confirm-btn" onclick="confirmQty()">확인</button>
     </div>
   `;
-
-  // 2. 가이드 메시지 변경
   els.guide.innerText = "수량을 입력하세요";
   els.guide.style.color = "#333";
 
-  // 3. 인라인 입력창에 포커스 (키보드 띄우기)
   const inlineInput = document.getElementById("inline-qty");
-  
-  // 엔터키 이벤트 연결
   inlineInput.addEventListener("keypress", (e) => { 
     if(e.key === "Enter") confirmQty(); 
   });
 
-  // 약간의 딜레이를 주어 확실하게 포커스 진입
   setTimeout(() => {
     inlineInput.focus();
-    inlineInput.select(); // 숫자 전체 선택 (바로 덮어쓰기 편하게)
+    inlineInput.select(); 
   }, 100);
 }
 
-// [수정] 수량 확정 로직 (인라인 입력값 읽기)
 function confirmQty() {
   const inlineInput = document.getElementById("inline-qty");
   let val = "1";
-  
-  if (inlineInput) {
-    val = inlineInput.value.trim();
-  }
-
+  if (inlineInput) val = inlineInput.value.trim();
   if(!val || isNaN(val) || Number(val) < 1) val = "1";
-  currentProduct.qty = val;
   
+  currentProduct.qty = val;
   moveToStep2();
 }
 
 function moveToStep2() {
-  // 화면을 다시 깔끔한 텍스트로 복구
   els.pName.innerHTML = `
     <div>${currentProduct.name}</div>
     <div style="font-size:16px; color:#5f0080; margin-top:5px;">(${currentProduct.qty}개)</div>
@@ -256,18 +269,19 @@ function moveToStep2() {
 
 function handleLocationScan(scannedJibun) {
   const targetJibun = currentProduct.jibun;
-  // 공백 제거 후 비교
   if(scannedJibun.replace(/\s/g, "") === targetJibun.replace(/\s/g, "")) {
     saveLog(scannedJibun);
     showMessage("✅", "완료!", "green");
     setTimeout(() => { resetToStep1(); }, 1000);
   } else {
+    alert(`지번 불일치!\n스캔: ${scannedJibun}\n목표: ${targetJibun}`);
     showMessage("⚠️", "지번 불일치", "#ff6b00");
     keepFocus();
   }
 }
 
 function saveLog(scannedLoc) {
+  // 실제 저장 (에러 무시)
   fetch(GAS_URL, {
     method: "POST",
     mode: "no-cors",
@@ -318,10 +332,7 @@ function showMessage(icon, text, color) {
 }
 
 function keepFocus() {
-  // 현재 수량 입력 중(인라인 입력창 존재)이면 메인 스캔창으로 포커스를 뺏지 않음
   if (document.getElementById("inline-qty")) return;
-
-  // 그 외에는 스캔 입력창에 포커스 유지
   setTimeout(() => els.scanInput.focus(), 100);
 }
 
@@ -331,16 +342,11 @@ els.scanInput.addEventListener("keypress", (e) => {
 });
 
 els.workerInput.addEventListener("keypress", (e) => { if(e.key === "Enter") confirmWorker(); });
-
 els.refreshBtn.addEventListener("click", () => { if(confirm("새로고침?")) loadData(); });
 
-// 화면 클릭 시 포커스 제어
 document.addEventListener("click", (e) => {
-  // 버튼이나 입력창을 누른 게 아니고, 로그인 모달이 닫혀있다면 스캔창 포커스
   if(!e.target.closest("button") && !e.target.closest("input")) {
-    if(els.loginModal.style.display === "none") {
-      keepFocus();
-    }
+    if(els.loginModal.style.display === "none") keepFocus();
   }
 });
 
