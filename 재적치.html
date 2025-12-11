@@ -61,7 +61,6 @@
     padding: 10px;
     overflow: hidden;
     position: relative;
-    /* 기본 정렬 상태 */
     justify-content: flex-start; 
   }
 
@@ -76,7 +75,9 @@
   }
   #scan-input { 
     width: 100%; padding: 15px; font-size: 18px; border: 2px solid var(--kurly-purple); 
-    border-radius: 8px; outline: none; text-align: center; font-weight: bold; 
+    border-radius: 8px; outline: none; text-align: center; font-weight: bold;
+    /* 중요: IME(한글입력기) 비활성화 시도 (PC/일부 안드로이드용) */
+    ime-mode: disabled; 
   }
    
   #info-card {
@@ -116,7 +117,7 @@
   }
 
   /* =========================================
-     [수정됨] 1단계: 상품 스캔 모드 
+     [1단계: 상품 스캔 모드] 
      ========================================= */
   body.mode-step1 #info-card { display: none !important; }
   
@@ -129,23 +130,20 @@
     margin-bottom: 15px; 
   }
 
-  /* [중요 수정] 
-     position: absolute를 제거하고 Flexbox와 Margin을 사용하여 
-     화면 상단 기준 위치를 잡습니다. (키보드가 올라와도 안전한 위치)
-  */
+  /* 키보드 가림 방지를 위해 상단 배치 (Flex Flow 사용) */
   body.mode-step1 #main-container {
-    justify-content: flex-start; /* 상단부터 배치 */
-    padding-top: 10vh; /* 화면 높이의 10%만큼 위에서 띄움 */
+    justify-content: flex-start; 
+    padding-top: 10vh; 
   }
 
   body.mode-step1 #input-wrapper {
-    position: static; /* absolute 제거 -> 흐름에 따름 */
-    transform: none;  /* 중앙 정렬 transform 제거 */
+    position: static; 
+    transform: none; 
     border: none;
     background: transparent;
     width: 90%;
     max-width: 400px;
-    margin: 0 auto; /* 가로 중앙 정렬 */
+    margin: 0 auto; 
     padding: 0;
   }
   
@@ -166,7 +164,6 @@
     padding: 0; 
     justify-content: flex-end; 
     background: #fff4e6; 
-    /* 1단계에서 줬던 padding 초기화 */
     padding-top: 0; 
   }
    
@@ -226,7 +223,7 @@
 <div id="login-modal" class="modal-overlay">
   <div class="modal-box">
     <div class="logo" style="margin-bottom: 20px;">Kurly Work</div>
-    <div style="font-weight:bold; margin-bottom:15px;">작업자 이름</div>
+    <div style="font-weight:bold; margin-bottom:15px;">작업자 이름 (한글)</div>
     <input type="text" id="worker-input" class="modal-input" placeholder="이름 입력" autocomplete="off">
     <button class="modal-btn" onclick="confirmWorker()">시작</button>
   </div>
@@ -278,7 +275,7 @@
   
   <div id="input-wrapper">
     <div id="guide-msg">상품 바코드를 스캔하세요</div>
-    <input type="text" id="scan-input" placeholder="스캔..." autocomplete="off">
+    <input type="text" id="scan-input" placeholder="스캔..." autocomplete="off" inputmode="url">
   </div>
 </div>
 
@@ -425,7 +422,6 @@ function setStep(step) {
     els.scanInput.placeholder = "지번 바코드 스캔";
   }
   
-  // [중요] 키보드 올라와도 인풋박스가 보이도록 스크롤 처리 추가
   setTimeout(() => {
     els.scanInput.focus();
     els.scanInput.scrollIntoView({ behavior: "smooth", block: "center" });
