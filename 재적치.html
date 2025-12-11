@@ -3,343 +3,316 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kurly Relocation Fixed</title>
+<title>Kurly Relocation PDA</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
 <style>
   :root { --kurly-purple: #5f0080; --kurly-orange: #ff6b00; --bg-gray: #f4f4f4; --text-black: #333; }
   * { box-sizing: border-box; }
+  body { height: 100vh; margin: 0; padding: 10px; overflow: hidden; font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-gray); display: flex; flex-direction: column; align-items: center; }
   
-  body { 
-    height: 100vh; margin: 0; padding: 0; overflow: hidden; 
-    font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-gray); 
-    display: flex; flex-direction: column; 
+  /* 상단 헤더 (고정) */
+  .header { 
+    width: 100%; max-width: 400px; 
+    display: flex; justify-content: space-between; align-items: center; 
+    margin-bottom: 5px; flex-shrink: 0; 
+    position: sticky; top: 0; z-index: 100; background-color: var(--bg-gray); /* 고정 강화 */
   }
-
-  /* === 1. 고정 헤더 (항상 보임) === */
-  .header-container {
-    flex: 0 0 50px; /* 높이 고정 */
-    background: white;
-    border-bottom: 1px solid #ddd;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 15px;
-    z-index: 100;
-  }
-  .logo { color: var(--kurly-purple); font-weight: 900; font-size: 18px; }
+  .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
+  .status-btn { font-size: 12px; background: white; padding: 6px 12px; border-radius: 20px; color: #555; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; border: 1px solid #ddd; }
   
-  /* 초기화 버튼 (헤더 우측) */
-  .btn-reset {
-    background: #f1f1f1; color: #333; border: 1px solid #ccc;
-    padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold;
-    cursor: pointer; display: flex; align-items: center; gap: 4px;
-  }
-
-  /* === 2. 메인 콘텐츠 영역 === */
-  .main-content {
-    flex: 1;
-    position: relative;
-    overflow-y: auto;
-    padding: 15px;
-    display: flex; flex-direction: column;
-  }
-
-  /* 단계별 화면 (기본 숨김) */
-  .step-screen { display: none; flex-direction: column; height: 100%; }
-  .step-screen.active { display: flex; animation: fadeIn 0.3s; }
-
-  /* 공통 UI */
-  .title-label { font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #333; }
-  .input-box {
-    width: 100%; height: 50px; font-size: 20px; text-align: center;
-    border: 2px solid #ddd; border-radius: 8px; margin-bottom: 15px;
-    font-weight: bold; outline: none;
-  }
-  .input-box:focus { border-color: var(--kurly-purple); }
+  #worker-display { width: 100%; max-width: 400px; text-align: right; font-size: 12px; color: #666; margin-bottom: 5px; font-weight: 500; flex-shrink: 0; }
   
-  .btn-action {
-    width: 100%; padding: 15px; background: var(--kurly-purple); color: white;
-    font-size: 16px; font-weight: bold; border: none; border-radius: 8px;
-    margin-top: auto; /* 하단 붙이기 */
+  /* 단계바 */
+  #step-bar { width: 100%; max-width: 400px; display: flex; margin-bottom: 15px; flex-shrink: 0; background: #ddd; border-radius: 8px; overflow: hidden; }
+  .step { flex: 1; text-align: center; padding: 10px 0; font-size: 14px; font-weight: bold; color: #999; }
+  .step.active { background: var(--kurly-purple); color: white; }
+  .step.active-2 { background: var(--kurly-orange); color: white; }
+  
+  /* 입력창 (PDA 핵심) */
+  #input-box { width: 100%; max-width: 400px; margin-bottom: 15px; flex-shrink: 0; }
+  #scan-input { 
+    width: 100%; padding: 15px; font-size: 18px; border: 2px solid var(--kurly-purple); 
+    border-radius: 8px; outline: none; text-align: center; font-weight: bold; 
+    background: white; color: #333;
   }
+  #scan-input:focus { box-shadow: 0 0 8px rgba(95,0,128,0.3); border-color: var(--kurly-purple); }
+  
+  #guide-msg { width: 100%; max-width: 400px; text-align: center; font-size: 18px; font-weight: 800; margin-bottom: 10px; color: var(--kurly-purple); flex-shrink: 0; }
 
-  /* [Step 3] 상품 정보 카드 */
-  .product-card {
-    background: white; padding: 20px; border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px;
-  }
-  .p-name { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 5px; word-break: keep-all; }
-  .p-code { font-size: 13px; color: #888; margin-bottom: 15px; }
-
-  /* [Step 4] 타겟 지번 (거대 폰트) */
-  .target-area {
-    background: #fff4e6; border: 4px solid var(--kurly-orange);
-    border-radius: 12px; text-align: center;
-    flex-grow: 1; display: flex; flex-direction: column; justify-content: center;
-    margin-bottom: 15px; min-height: 180px;
-  }
-  .target-label { color: #d9480f; font-size: 14px; font-weight: bold; margin-bottom: 5px; }
-  .target-val {
-    font-size: 15vw; /* 화면 꽉 차게 */
-    font-weight: 900; color: var(--kurly-orange);
-    line-height: 1; white-space: nowrap;
-  }
-
-  /* ★ 지번 안내 문구 (요청사항 반영) */
-  .guide-box {
-    background-color: #e3f2fd;
-    border-left: 5px solid #2196f3;
-    padding: 12px; margin-bottom: 15px;
-    color: #0d47a1; font-size: 13px; line-height: 1.5;
-    border-radius: 4px;
-  }
-
-  /* 로딩 및 메시지 오버레이 */
-  #loading, #msg-overlay {
-    position: fixed; inset: 0; z-index: 2000;
-    display: none; justify-content: center; align-items: center; flex-direction: column;
-  }
-  #loading { background: rgba(255,255,255,0.9); }
-  #msg-overlay { background: rgba(0,0,0,0.6); color: white; pointer-events: none; }
-
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  /* 정보 카드 (스크롤 영역) */
+  #info-card { flex-grow: 1; width: 100%; max-width: 400px; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: start; overflow-y: auto; }
+  .row { margin-bottom: 20px; }
+  .label { font-size: 13px; color: #888; margin-bottom: 5px; }
+  .val { font-size: 20px; font-weight: 700; color: #333; word-break: break-all; }
+  
+  .target-box { background: #fff4e6; padding: 15px; border-radius: 8px; border: 2px solid var(--kurly-orange); text-align: center; display: none; margin-top: 10px; }
+  .target-val { font-size: 36px; font-weight: 900; color: var(--kurly-orange); }
+  
+  /* 팝업 공통 */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: center; }
+  .modal-box { background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+  .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; }
+  .modal-input { width: 100%; padding: 10px; font-size: 20px; text-align: center; border: 2px solid var(--kurly-purple); border-radius: 8px; margin-bottom: 20px; font-weight: bold; color: var(--text-black); }
+  .modal-btn { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; background: var(--kurly-purple); color: white; border: none; border-radius: 8px; cursor: pointer; }
+  
+  #msg-overlay { z-index: 2001; color: white; pointer-events: none; }
+  #msg-icon { font-size: 60px; margin-bottom: 20px; }
+  #msg-text { font-size: 24px; font-weight: bold; }
+  #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; }
 </style>
 </head>
 <body>
 
-<div class="header-container">
-  <div class="logo">Kurly Work</div>
-  <button class="btn-reset" onclick="fullReset()">
-    <span>↻</span> 초기화
-  </button>
+<div id="login-modal" class="modal-overlay" style="display: flex;">
+  <div class="modal-box">
+    <div class="logo" style="margin-bottom: 20px; color: #5f0080;">Kurly Work (PDA)</div>
+    <div class="modal-title">작업자 이름 입력</div>
+    <input type="text" id="worker-input" class="modal-input" placeholder="이름">
+    <button class="modal-btn" onclick="confirmWorker()">작업 시작</button>
+  </div>
 </div>
 
-<div class="main-content">
-
-  <div id="step-1" class="step-screen active">
-    <div style="margin-top: 50px; text-align: center;">
-      <h2 style="color:var(--kurly-purple);">작업자 등록</h2>
-      <p style="color:#666;">작업을 시작하려면 이름을 입력하세요.</p>
-    </div>
-    <input type="text" id="input-name" class="input-box" placeholder="이름 입력" style="margin-top:20px;">
-    <button class="btn-action" onclick="goStep2()">작업 시작</button>
-  </div>
-
-  <div id="step-2" class="step-screen">
-    <div class="title-label">상품 스캔</div>
-    <div style="background:#ddd; height:200px; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:20px; color:#666;">
-      📷 바코드 스캔 대기
-    </div>
-    <input type="text" id="input-prod" class="input-box" placeholder="상품바코드 스캔" autocomplete="off">
-    <div style="font-size:12px; color:#888; text-align:center; margin-top:10px;">
-      DB 상태: <span id="db-count">0</span>개 로드됨
-    </div>
-  </div>
-
-  <div id="step-3" class="step-screen">
-    <div class="title-label">수량 입력</div>
-    
-    <div class="product-card">
-      <div class="p-name" id="disp-pname">-</div>
-      <div class="p-code" id="disp-pcode">-</div>
-      <div style="font-size:14px; color:var(--kurly-purple); font-weight:bold;">이 상품이 맞나요?</div>
-    </div>
-
-    <label style="font-size:13px; color:#666; display:block; margin-bottom:5px;">이동할 수량</label>
-    <input type="number" id="input-qty" class="input-box" value="1" style="font-size:30px; height:70px;">
-    
-    <button class="btn-action" onclick="goStep4()">지번 확인하러 가기</button>
-  </div>
-
-  <div id="step-4" class="step-screen">
-    <div class="target-area">
-      <div class="target-label">⬇️ 여기로 이동하세요</div>
-      <div class="target-val" id="disp-jibun">-</div>
-    </div>
-
-    <div class="guide-box">
-      [안내]<br>
-      1. 빈 로케이션을 우선 확인해주세요.<br>
-      2. <strong>구역(A)-열(01)-단(02)</strong> 형식으로 확인하세요.<br>
-      3. 동종 상품이 있다면 합적재 해주세요.
-    </div>
-
-    <input type="text" id="input-loc" class="input-box" placeholder="지번 바코드 스캔" style="border-color:var(--kurly-orange);">
-  </div>
-
+<div id="loading">
+  <p style="color:#5f0080; font-weight:bold;">데이터 동기화 중...</p>
 </div>
 
-<div id="loading"><p style="color:#5f0080; font-weight:bold;">데이터 동기화 중...</p></div>
-<div id="msg-overlay">
-  <div id="msg-icon" style="font-size:50px;">✅</div>
-  <div id="msg-text" style="font-size:20px; font-weight:bold;">완료</div>
+<div id="qty-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title" id="qty-title"></div>
+    <input type="tel" id="qty-input" class="modal-input" value="1">
+    <button class="modal-btn" onclick="confirmQty()">확인</button>
+  </div>
+</div>
+
+<div id="msg-overlay" class="modal-overlay" style="background: rgba(0,0,0,0.8);">
+  <div id="msg-icon">✅</div>
+  <div id="msg-text">완료</div>
+</div>
+
+<div class="header">
+  <div class="logo">재적치 (PDA)</div>
+  <div id="refresh-btn" class="status-btn">
+    <span id="db-status">대기</span> 🔄
+  </div>
+</div>
+
+<div id="worker-display"></div>
+
+<div id="step-bar">
+  <div id="step1" class="step active">1. 상품 스캔</div>
+  <div id="step2" class="step">2. 지번 스캔</div>
+</div>
+
+<div id="guide-msg">상품 바코드를 스캔하세요</div>
+
+<div id="input-box">
+  <input type="text" id="scan-input" placeholder="스캔 또는 입력..." autocomplete="off">
+</div>
+
+<div id="info-card">
+  <div class="row">
+    <div class="label">상품명 (수량)</div>
+    <div class="val" id="p-name">-</div>
+  </div>
+  
+  <div id="target-area" class="target-box">
+    <div class="label" style="color:#d9480f">⬇️ 이 지번에 적치</div>
+    <div class="target-val" id="p-jibun">-</div>
+  </div>
 </div>
 
 <script>
-// --- 설정 및 변수 ---
+// 재적치용 URL
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxlnPMPZAWhPum7f-yl3EVVn_wFqrh_v0GB6Edncx20eglrylv0iDbdET7o_jaPfj3e/exec";
-let skuMap = {};
-let workerName = "";
-let currentItem = null; // { code, name, jibun, qty }
 
-// --- 초기화 및 데이터 로드 ---
-window.onload = function() {
-  document.getElementById('input-name').focus();
-  loadData(); // 백그라운드 데이터 로드
+let skuMap = {};
+let currentStep = 1; 
+let currentProduct = null;
+let currentWorker = ""; 
+
+const els = {
+  loginModal: document.getElementById("login-modal"),
+  workerInput: document.getElementById("worker-input"),
+  workerDisplay: document.getElementById("worker-display"),
+  step1: document.getElementById("step1"),
+  step2: document.getElementById("step2"),
+  guide: document.getElementById("guide-msg"),
+  scanInput: document.getElementById("scan-input"), 
+  pName: document.getElementById("p-name"),
+  pJibun: document.getElementById("p-jibun"),
+  targetArea: document.getElementById("target-area"),
+  loading: document.getElementById("loading"),
+  qtyModal: document.getElementById("qty-modal"),
+  qtyInput: document.getElementById("qty-input"),
+  qtyTitle: document.getElementById("qty-title"),
+  msgOverlay: document.getElementById("msg-overlay"),
+  msgIcon: document.getElementById("msg-icon"),
+  msgText: document.getElementById("msg-text"),
+  dbStatus: document.getElementById("db-status"),
+  refreshBtn: document.getElementById("refresh-btn")
 };
 
+// 1. 작업자 로그인
+function confirmWorker() {
+  const name = els.workerInput.value.trim();
+  if(!name) { alert("이름을 입력해주세요!"); return; }
+  currentWorker = name;
+  els.workerDisplay.innerText = "작업자: " + name; 
+  els.loginModal.style.display = "none"; 
+  loadData();
+}
+
+// 2. 데이터 로드 (DB 갱신 기능)
 async function loadData() {
+  els.loading.style.display = 'flex';
   try {
     const res = await fetch(GAS_URL + "?t=" + Date.now());
     const data = await res.json();
     skuMap = data;
-    document.getElementById('db-count').innerText = Object.keys(data).length;
+    els.dbStatus.innerText = Object.keys(data).length + "개";
+    els.loading.style.display = 'none';
+    resetToStep1(); 
   } catch(e) {
-    console.error("DB Load Fail");
+    alert("데이터 로드 실패");
+    els.loading.style.display = 'none';
   }
 }
 
-// --- 단계 이동 함수 ---
-function showStep(stepNum) {
-  // 모든 스텝 숨김
-  document.querySelectorAll('.step-screen').forEach(el => el.classList.remove('active'));
-  // 해당 스텝 표시
-  document.getElementById('step-' + stepNum).classList.add('active');
+// 3. 입력 처리
+function handleInput(value) {
+  const code = String(value).trim();
+  if (!code) return;
+
+  if (currentStep === 1) handleProductScan(code);
+  else handleLocationScan(code);
   
-  // 포커스 자동 이동
-  if(stepNum === 1) document.getElementById('input-name').focus();
-  if(stepNum === 2) {
-    document.getElementById('input-prod').value = '';
-    document.getElementById('input-prod').focus();
-  }
-  if(stepNum === 3) {
-    document.getElementById('input-qty').focus();
-    // 모바일 키패드 올라올 때 스크롤 조정 등을 위해 약간 지연
-    setTimeout(() => document.getElementById('input-qty').select(), 100);
-  }
-  if(stepNum === 4) {
-    document.getElementById('input-loc').value = '';
-    document.getElementById('input-loc').focus();
+  els.scanInput.value = ""; 
+}
+
+// 상품 스캔
+function handleProductScan(code) {
+  const item = skuMap[code];
+  if(item) {
+    // 합적재 로직 없음. 단순 1:1 매칭
+    currentProduct = { code: item[1], name: item[0], jibun: item[2], zone: item[3], qty: 1 };
+    openQtyModal(item[0]); 
+  } else {
+    showMessage("❌", "미등록 상품", "red");
+    setTimeout(() => els.scanInput.focus(), 100);
   }
 }
 
-// --- 로직 처리 ---
-
-// [Step 1 -> 2] 이름 입력 완료
-function goStep2() {
-  const name = document.getElementById('input-name').value.trim();
-  if(!name) { alert("이름을 입력해주세요."); return; }
-  workerName = name;
-  showStep(2);
+// 수량 입력
+function openQtyModal(prodName) {
+  els.qtyTitle.innerHTML = `<span style="font-size:14px; color:#666">${prodName}</span><br>수량 입력`;
+  els.qtyInput.value = "1"; 
+  els.qtyModal.style.display = "flex";
+  setTimeout(() => els.qtyInput.focus(), 100); 
 }
 
-// [Step 2 -> 3] 상품 스캔
-document.getElementById('input-prod').addEventListener('keypress', function(e) {
-  if(e.key === 'Enter') {
-    const code = this.value.trim();
-    if(!code) return;
-    
-    // 데이터 조회
-    const itemData = skuMap[code];
-    if(itemData) {
-      // itemData: [상품명, 코드, 지번] (가정)
-      currentItem = {
-        code: itemData[1],
-        name: itemData[0],
-        jibun: itemData[2],
-        qty: 1
-      };
-      
-      // 화면 갱신
-      document.getElementById('disp-pname').innerText = currentItem.name;
-      document.getElementById('disp-pcode').innerText = currentItem.code;
-      document.getElementById('input-qty').value = "1";
-      
-      showStep(3);
-    } else {
-      showMsg("❌", "미등록 상품", "red");
-      this.value = "";
-    }
-  }
-});
-
-// [Step 3 -> 4] 수량 입력 완료
-function goStep4() {
-  const qty = document.getElementById('input-qty').value;
-  if(!qty || qty < 1) { alert("올바른 수량을 입력하세요"); return; }
-  
-  currentItem.qty = qty;
-  
-  // 지번 표시
-  document.getElementById('disp-jibun').innerText = currentItem.jibun;
-  showStep(4);
+function confirmQty() {
+  let val = els.qtyInput.value.trim();
+  if(!val || isNaN(val) || Number(val) < 1) val = "1";
+  currentProduct.qty = val;
+  els.qtyModal.style.display = "none";
+  moveToStep2();
 }
 
-// [Step 4 -> 완료] 지번 스캔 및 저장
-document.getElementById('input-loc').addEventListener('keypress', function(e) {
-  if(e.key === 'Enter') {
-    const scanLoc = this.value.trim();
-    
-    // 지번 일치 여부 확인 (공백 제거 후 비교)
-    if(scanLoc.replace(/\s/g,"") === currentItem.jibun.replace(/\s/g,"")) {
-      saveData(scanLoc);
-    } else {
-      showMsg("⚠️", "지번 불일치", "#ff6b00");
-      this.value = "";
-    }
-  }
-});
+function moveToStep2() {
+  els.pName.innerText = `${currentProduct.name} (${currentProduct.qty}개)`;
+  els.pJibun.innerText = currentProduct.jibun;
+  setStep(2); 
+}
 
-function saveData(loc) {
-  document.getElementById('loading').style.display = 'flex';
+// 지번 스캔
+function handleLocationScan(scannedJibun) {
+  const targetJibun = currentProduct.jibun;
   
-  const payload = {
-      workerName: workerName,
-      prodCode: currentItem.code,
-      prodName: currentItem.name,
-      targetJibun: currentItem.jibun,
-      scannedJibun: loc,
-      qty: currentItem.qty
-  };
+  if(scannedJibun.replace(/\s/g, "") === targetJibun.replace(/\s/g, "")) {
+    saveLog(scannedJibun);
+    showMessage("✅", "완료!", "green");
+    setTimeout(() => { resetToStep1(); }, 1500);
+  } else {
+    showMessage("⚠️", "지번 불일치", "#ff6b00");
+    setTimeout(() => els.scanInput.focus(), 100);
+  }
+}
 
+// 로그 저장
+function saveLog(scannedLoc) {
   fetch(GAS_URL, {
-    method: "POST", mode: "no-cors",
-    body: JSON.stringify(payload)
-  }).then(() => {
-    document.getElementById('loading').style.display = 'none';
-    showMsg("✅", "적치 완료", "green");
-    
-    // 완료 후 다시 스캔화면(Step 2)으로
-    setTimeout(() => {
-      showStep(2);
-    }, 1000);
+    method: "POST",
+    mode: "no-cors",
+    body: JSON.stringify({
+      workerName: currentWorker, 
+      prodCode: currentProduct.code,
+      prodName: currentProduct.name,
+      targetJibun: currentProduct.jibun,
+      scannedJibun: scannedLoc, 
+      qty: currentProduct.qty 
+    })
   });
 }
 
-// --- 유틸리티 ---
-function showMsg(icon, text, color) {
-  const overlay = document.getElementById('msg-overlay');
-  document.getElementById('msg-icon').innerText = icon;
-  const txtEl = document.getElementById('msg-text');
-  txtEl.innerText = text;
-  txtEl.style.color = color;
-  
-  overlay.style.display = "flex";
-  setTimeout(() => overlay.style.display = "none", 1000);
+function setStep(step) {
+  currentStep = step;
+  if(step === 1) {
+    els.step1.classList.add("active");
+    els.step2.classList.remove("active-2");
+    els.scanInput.style.borderColor = "#5f0080"; 
+    els.guide.innerText = "상품 바코드를 스캔하세요";
+    els.guide.style.color = "#5f0080";
+    els.targetArea.style.display = "none";
+  } else {
+    els.step1.classList.remove("active");
+    els.step2.classList.add("active-2");
+    els.scanInput.style.borderColor = "#ff6b00"; 
+    els.guide.innerText = "지번 바코드를 스캔하세요";
+    els.guide.style.color = "#ff6b00";
+    els.targetArea.style.display = "block";
+  }
+  setTimeout(() => els.scanInput.focus(), 100);
 }
 
-function fullReset() {
-  if(confirm("처음으로 돌아가시겠습니까? (이름은 유지됩니다)")) {
-    // 이름만 남기고 나머지 초기화
-    document.getElementById('input-prod').value = '';
-    document.getElementById('input-qty').value = '1';
-    document.getElementById('input-loc').value = '';
-    currentItem = null;
-    
-    // 이름이 있으면 2번, 없으면 1번
-    if(workerName) showStep(2);
-    else showStep(1);
-  }
+function resetToStep1() {
+  setStep(1);
+  els.pName.innerText = "-";
+  els.pJibun.innerText = "-";
+  currentProduct = null;
 }
+
+function showMessage(icon, text, color) {
+  els.msgIcon.innerText = icon;
+  els.msgText.innerHTML = text;
+  els.msgText.style.color = color;
+  els.msgOverlay.style.display = 'flex';
+  setTimeout(() => els.msgOverlay.style.display = 'none', 1500);
+}
+
+// 이벤트 리스너
+els.scanInput.addEventListener("keypress", (e) => {
+  if(e.key === "Enter") handleInput(els.scanInput.value);
+});
+
+els.qtyInput.addEventListener("keypress", (e) => { if(e.key === "Enter") confirmQty(); });
+els.workerInput.addEventListener("keypress", (e) => { if(e.key === "Enter") confirmWorker(); });
+
+// 상단 버튼: DB 다시 불러오기 (초기화 아님)
+els.refreshBtn.addEventListener("click", () => { 
+  if(confirm("데이터를 다시 불러오시겠습니까?")) {
+    loadData(); 
+  }
+});
+
+// 화면 터치 시 입력창 포커스 유지
+document.addEventListener("click", (e) => {
+  if(!e.target.closest("button") && !e.target.closest("input")) {
+    if(els.loginModal.style.display === "none" && els.qtyModal.style.display === "none") {
+      els.scanInput.focus();
+    }
+  }
+});
 </script>
 </body>
 </html>
