@@ -18,9 +18,9 @@
     display: flex; flex-direction: column; 
   }
    
-  /* ▼▼▼ [수정됨] 헤더 높이 및 여백 수정 (잘림 방지) ▼▼▼ */
+  /* 헤더 스타일 */
   .header { 
-    padding: 10px 15px; /* 내부 여백 확보 */
+    padding: 10px 15px; 
     width: 100%; 
     display: flex; 
     justify-content: space-between; 
@@ -28,7 +28,7 @@
     background-color: white; 
     border-bottom: 1px solid #ddd; 
     flex-shrink: 0; 
-    min-height: 60px; /* 고정 높이 대신 최소 높이 설정 */
+    min-height: 60px; 
     height: auto;
   }
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
@@ -41,7 +41,7 @@
     font-weight: bold; 
     border: 1px solid #ddd; 
     cursor: pointer; 
-    white-space: nowrap; /* 버튼 내부 줄바꿈 방지 */
+    white-space: nowrap; 
     display: flex;
     align-items: center;
     gap: 5px;
@@ -64,13 +64,14 @@
     justify-content: flex-start; 
   }
 
+  /* 입력창 래퍼 */
   #input-wrapper {
     width: 100%;
     padding: 10px;
     background: white;
     border-top: 1px solid #ddd;
     flex-shrink: 0;
-    transition: all 0.3s ease; /* 위치 변경 시 부드럽게 */
+    transition: all 0.3s ease;
   }
   #scan-input { 
     width: 100%; padding: 15px; font-size: 18px; border: 2px solid var(--kurly-purple); 
@@ -113,13 +114,9 @@
     padding: 0 5px; 
   }
 
-  /* =========================================
-      [모드 1: 상품 스캔 - 수정됨] 
-      ========================================= */
-  /* 정보 카드 숨김 */
+  /* [모드 1: 상품 스캔] */
   body.mode-step1 #info-card { display: none !important; }
   
-  /* 가이드 메시지 (입력창 위로 배치하기 위해 스타일 조정) */
   body.mode-step1 #guide-msg { 
     display: block; 
     text-align: center; 
@@ -129,29 +126,27 @@
     margin-bottom: 15px; 
   }
 
-  /* 입력창 중앙 정렬 */
+  /* 1단계: 입력창 중앙 정렬 */
   body.mode-step1 #input-wrapper {
     position: absolute;
     top: 55%; 
     left: 50%;
-    transform: translate(-50%, -50%); /* 정확한 정중앙 */
+    transform: translate(-50%, -50%);
     border: none;
     background: transparent;
-    width: 90%; /* 좌우 여백 */
+    width: 90%;
     max-width: 400px;
     padding: 0;
   }
   
   body.mode-step1 #scan-input {
-    box-shadow: 0 4px 15px rgba(95, 0, 128, 0.2); /* 약간의 그림자 추가 */
+    box-shadow: 0 4px 15px rgba(95, 0, 128, 0.2);
   }
 
   body.mode-step1 #target-area { display: none; }
 
 
-  /* =========================================
-      [모드 2: 지번 스캔 - 기존 유지] 
-      ========================================= */
+  /* [모드 2: 지번 스캔] */
   body.mode-step2 .header { display: none !important; }          
   body.mode-step2 #worker-display { display: none !important; } 
   body.mode-step2 #step-bar { display: none !important; }        
@@ -205,7 +200,7 @@
   <div class="modal-box">
     <div class="logo" style="margin-bottom: 20px;">Kurly Work</div>
     <div style="font-weight:bold; margin-bottom:15px;">작업자 이름</div>
-    <input type="text" id="worker-input" class="modal-input" placeholder="이름 입력">
+    <input type="text" id="worker-input" class="modal-input" placeholder="이름 입력" autofocus>
     <button class="modal-btn" onclick="confirmWorker()">시작</button>
   </div>
 </div>
@@ -240,7 +235,6 @@
 </div>
 
 <div id="main-container">
-  
   <div id="info-card">
     <div class="row">
       <div class="label">상품명</div>
@@ -289,6 +283,11 @@ const els = {
   dbStatus: document.getElementById("db-status"),
   refreshBtn: document.getElementById("refresh-btn")
 };
+
+// [추가됨] 페이지 로드 시 작업자 이름 입력창에 포커스
+window.addEventListener("load", () => {
+  setTimeout(() => els.workerInput.focus(), 100);
+});
 
 function confirmWorker() {
   const name = els.workerInput.value.trim();
@@ -354,7 +353,7 @@ function moveToStep2() {
   const jibunText = currentProduct.jibun;
   els.pJibun.innerText = jibunText;
   
-  // 글자 크기 자동 조절 (이전 요청사항 유지)
+  // 글자 크기 자동 조절
   const len = jibunText.length;
   const calcSize = Math.min(20, 115 / Math.max(1, len));
   els.pJibun.style.fontSize = calcSize + "vw";
@@ -367,6 +366,8 @@ function handleLocationScan(scannedJibun) {
   if(scannedJibun.replace(/\s/g, "") === targetJibun.replace(/\s/g, "")) {
     saveLog(scannedJibun);
     showMessage("✅", "완료!", "green");
+    
+    // 완료 후 1단계로 복귀 (시간차를 두고 실행)
     setTimeout(() => { resetToStep1(); }, 1500);
   } else {
     showMessage("⚠️", "불일치", "#ff6b00");
@@ -397,7 +398,8 @@ function setStep(step) {
     els.step1.classList.remove("active"); els.step2.classList.add("active-2");
     els.scanInput.placeholder = "지번 바코드 스캔";
   }
-  setTimeout(() => els.scanInput.focus(), 100);
+  // [중요] 단계 변경 시 스캔 입력창에 강제로 포커스
+  setTimeout(() => els.scanInput.focus(), 200);
 }
 
 function resetToStep1() {
@@ -422,7 +424,10 @@ els.refreshBtn.addEventListener("click", () => { if(confirm("DB 갱신?")) loadD
 
 document.addEventListener("click", (e) => {
   if(!e.target.closest("button") && !e.target.closest("input")) {
-    if(els.loginModal.style.display === "none" && els.qtyModal.style.display === "none") els.scanInput.focus();
+    // 모달이 없을 때만 스캔창 포커스
+    if(els.loginModal.style.display === "none" && els.qtyModal.style.display === "none") {
+      els.scanInput.focus();
+    }
   }
 });
 </script>
