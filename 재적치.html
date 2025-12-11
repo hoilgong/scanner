@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Kurly Relocation PDA</title>
+<title>Kurly Relocation PDA (Inline)</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
 <style>
@@ -17,28 +17,29 @@
   
   #worker-display { width: 100%; max-width: 400px; text-align: right; font-size: 12px; color: #666; margin-bottom: 5px; font-weight: 500; flex-shrink: 0; }
   
-  /* 단계바 */
   #step-bar { width: 100%; max-width: 400px; display: flex; margin-bottom: 15px; flex-shrink: 0; background: #ddd; border-radius: 8px; overflow: hidden; }
   .step { flex: 1; text-align: center; padding: 10px 0; font-size: 14px; font-weight: bold; color: #999; }
   .step.active { background: var(--kurly-purple); color: white; }
   .step.active-2 { background: var(--kurly-orange); color: white; }
   
-  /* 입력창 (PDA 핵심) */
   #input-box { width: 100%; max-width: 400px; margin-bottom: 15px; flex-shrink: 0; }
+  
+  /* 메인 스캔 입력창 */
   #scan-input { 
     width: 100%; padding: 15px; font-size: 18px; border: 2px solid var(--kurly-purple); 
     border-radius: 8px; outline: none; text-align: center; font-weight: bold; 
     background: white; color: #333;
+    -webkit-tap-highlight-color: transparent;
   }
   #scan-input:focus { box-shadow: 0 0 8px rgba(95,0,128,0.3); border-color: var(--kurly-purple); }
   
   #guide-msg { width: 100%; max-width: 400px; text-align: center; font-size: 18px; font-weight: 800; margin-bottom: 10px; color: var(--kurly-purple); flex-shrink: 0; }
 
-  /* 정보 카드 */
+  /* 정보 카드 영역 */
   #info-card { flex-grow: 1; width: 100%; max-width: 400px; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: start; overflow-y: auto; }
   .row { margin-bottom: 20px; }
   .label { font-size: 13px; color: #888; margin-bottom: 5px; }
-  .val { font-size: 20px; font-weight: 700; color: #333; word-break: break-all; }
+  .val { font-size: 20px; font-weight: 700; color: #333; word-break: break-all; min-height: 30px;}
   
   .target-box { background: #fff4e6; padding: 15px; border-radius: 8px; border: 2px solid var(--kurly-orange); text-align: center; display: none; margin-top: 10px; }
   .target-val { font-size: 36px; font-weight: 900; color: var(--kurly-orange); }
@@ -54,13 +55,27 @@
   #msg-icon { font-size: 60px; margin-bottom: 20px; }
   #msg-text { font-size: 24px; font-weight: bold; }
   #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; }
+
+  /* [추가] 인라인 입력창 스타일 */
+  .inline-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+  .inline-qty-input { 
+      width: 80px; padding: 8px; font-size: 22px; text-align: center; 
+      border: 2px solid var(--kurly-purple); border-radius: 6px; 
+      font-weight: bold; color: var(--kurly-purple);
+      background: #fdfdfd;
+  }
+  .inline-confirm-btn {
+      padding: 8px 16px; background: var(--kurly-purple); color: white;
+      border: none; border-radius: 6px; font-weight: bold; font-size: 14px;
+      cursor: pointer;
+  }
 </style>
 </head>
 <body>
 
 <div id="login-modal" class="modal-overlay" style="display: flex;">
   <div class="modal-box">
-    <div class="logo" style="margin-bottom: 20px; color: #5f0080;">Kurly Work (PDA)</div>
+    <div class="logo" style="margin-bottom: 20px; color: #5f0080;">Kurly Work</div>
     <div class="modal-title">작업자 이름 입력</div>
     <input type="text" id="worker-input" class="modal-input" placeholder="이름">
     <button class="modal-btn" onclick="confirmWorker()">작업 시작</button>
@@ -69,14 +84,6 @@
 
 <div id="loading">
   <p style="color:#5f0080; font-weight:bold;">데이터 동기화 중...</p>
-</div>
-
-<div id="qty-modal" class="modal-overlay">
-  <div class="modal-box">
-    <div class="modal-title" id="qty-title"></div>
-    <input type="tel" id="qty-input" class="modal-input" value="1">
-    <button class="modal-btn" onclick="confirmQty()">확인</button>
-  </div>
 </div>
 
 <div id="msg-overlay" class="modal-overlay" style="background: rgba(0,0,0,0.8);">
@@ -101,7 +108,7 @@
 <div id="guide-msg">상품 바코드를 스캔하세요</div>
 
 <div id="input-box">
-  <input type="text" id="scan-input" placeholder="스캔 또는 입력..." autocomplete="off">
+  <input type="text" id="scan-input" inputmode="none" placeholder="스캔..." autocomplete="off">
 </div>
 
 <div id="info-card">
@@ -132,14 +139,11 @@ const els = {
   step1: document.getElementById("step1"),
   step2: document.getElementById("step2"),
   guide: document.getElementById("guide-msg"),
-  scanInput: document.getElementById("scan-input"), // 메인 입력창
+  scanInput: document.getElementById("scan-input"), 
   pName: document.getElementById("p-name"),
   pJibun: document.getElementById("p-jibun"),
   targetArea: document.getElementById("target-area"),
   loading: document.getElementById("loading"),
-  qtyModal: document.getElementById("qty-modal"),
-  qtyInput: document.getElementById("qty-input"),
-  qtyTitle: document.getElementById("qty-title"),
   msgOverlay: document.getElementById("msg-overlay"),
   msgIcon: document.getElementById("msg-icon"),
   msgText: document.getElementById("msg-text"),
@@ -147,7 +151,6 @@ const els = {
   refreshBtn: document.getElementById("refresh-btn")
 };
 
-// 1. 작업자 로그인
 function confirmWorker() {
   const name = els.workerInput.value.trim();
   if(!name) { alert("이름을 입력해주세요!"); return; }
@@ -157,7 +160,6 @@ function confirmWorker() {
   loadData();
 }
 
-// 2. 데이터 로드
 async function loadData() {
   els.loading.style.display = 'flex';
   try {
@@ -166,68 +168,102 @@ async function loadData() {
     skuMap = data;
     els.dbStatus.innerText = Object.keys(data).length + "개";
     els.loading.style.display = 'none';
-    resetToStep1(); // 로드 완료 후 입력창 포커스
+    resetToStep1(); 
   } catch(e) {
     alert("로드 실패");
     els.loading.style.display = 'none';
   }
 }
 
-// 3. 입력 처리 핸들러 (PDA 스캔 시 실행)
-function handleInput(value) {
-  const code = String(value).trim();
+function handleInput() {
+  const code = String(els.scanInput.value).trim();
+  els.scanInput.value = ""; // 입력창 즉시 비우기
+  
   if (!code) return;
 
   if (currentStep === 1) handleProductScan(code);
   else handleLocationScan(code);
-  
-  els.scanInput.value = ""; // 입력창 비우기
 }
 
 function handleProductScan(code) {
   const item = skuMap[code];
   if(item) {
     currentProduct = { code: item[1], name: item[0], jibun: item[2], zone: item[3], qty: 1 };
-    openQtyModal(item[0]); 
+    
+    // [변경] 모달 대신 인라인 입력 함수 호출
+    showInlineQtyInput(item[0]); 
   } else {
     showMessage("❌", "미등록 상품", "red");
-    // 실패해도 입력창 포커스 유지
-    setTimeout(() => els.scanInput.focus(), 100);
+    keepFocus();
   }
 }
 
-function openQtyModal(prodName) {
-  els.qtyTitle.innerHTML = `<span style="font-size:14px; color:#666">${prodName}</span><br>수량 입력`;
-  els.qtyInput.value = "1"; 
-  els.qtyModal.style.display = "flex";
-  setTimeout(() => els.qtyInput.focus(), 100); 
+// [핵심 기능] 정보창 내부에 수량 입력칸을 즉시 생성
+function showInlineQtyInput(prodName) {
+  // 1. UI 교체: 상품명 아래에 인라인 입력창 삽입
+  els.pName.innerHTML = `
+    <div style="font-size:18px; margin-bottom:8px;">${prodName}</div>
+    <div class="inline-wrapper">
+      <span style="font-size:14px; color:#666;">수량:</span>
+      <input type="tel" id="inline-qty" class="inline-qty-input" value="1" inputmode="numeric">
+      <button class="inline-confirm-btn" onclick="confirmQty()">확인</button>
+    </div>
+  `;
+
+  // 2. 가이드 메시지 변경
+  els.guide.innerText = "수량을 입력하세요";
+  els.guide.style.color = "#333";
+
+  // 3. 인라인 입력창에 포커스 (키보드 띄우기)
+  const inlineInput = document.getElementById("inline-qty");
+  
+  // 엔터키 이벤트 연결
+  inlineInput.addEventListener("keypress", (e) => { 
+    if(e.key === "Enter") confirmQty(); 
+  });
+
+  // 약간의 딜레이를 주어 확실하게 포커스 진입
+  setTimeout(() => {
+    inlineInput.focus();
+    inlineInput.select(); // 숫자 전체 선택 (바로 덮어쓰기 편하게)
+  }, 100);
 }
 
+// [수정] 수량 확정 로직 (인라인 입력값 읽기)
 function confirmQty() {
-  let val = els.qtyInput.value.trim();
+  const inlineInput = document.getElementById("inline-qty");
+  let val = "1";
+  
+  if (inlineInput) {
+    val = inlineInput.value.trim();
+  }
+
   if(!val || isNaN(val) || Number(val) < 1) val = "1";
   currentProduct.qty = val;
-  els.qtyModal.style.display = "none";
+  
   moveToStep2();
 }
 
 function moveToStep2() {
-  els.pName.innerText = `${currentProduct.name} (${currentProduct.qty}개)`;
+  // 화면을 다시 깔끔한 텍스트로 복구
+  els.pName.innerHTML = `
+    <div>${currentProduct.name}</div>
+    <div style="font-size:16px; color:#5f0080; margin-top:5px;">(${currentProduct.qty}개)</div>
+  `;
   els.pJibun.innerText = currentProduct.jibun;
   setStep(2); 
 }
 
 function handleLocationScan(scannedJibun) {
   const targetJibun = currentProduct.jibun;
-  // 공백제거 비교
+  // 공백 제거 후 비교
   if(scannedJibun.replace(/\s/g, "") === targetJibun.replace(/\s/g, "")) {
     saveLog(scannedJibun);
     showMessage("✅", "완료!", "green");
-    setTimeout(() => { resetToStep1(); }, 1500);
+    setTimeout(() => { resetToStep1(); }, 1000);
   } else {
     showMessage("⚠️", "지번 불일치", "#ff6b00");
-    // 실패해도 입력창 포커스 유지
-    setTimeout(() => els.scanInput.focus(), 100);
+    keepFocus();
   }
 }
 
@@ -263,8 +299,7 @@ function setStep(step) {
     els.guide.style.color = "#ff6b00";
     els.targetArea.style.display = "block";
   }
-  // 단계 바뀔 때마다 무조건 입력창 포커스
-  setTimeout(() => els.scanInput.focus(), 100);
+  keepFocus();
 }
 
 function resetToStep1() {
@@ -279,28 +314,32 @@ function showMessage(icon, text, color) {
   els.msgText.innerHTML = text;
   els.msgText.style.color = color;
   els.msgOverlay.style.display = 'flex';
-  setTimeout(() => els.msgOverlay.style.display = 'none', 1500);
+  setTimeout(() => els.msgOverlay.style.display = 'none', 1000);
+}
+
+function keepFocus() {
+  // 현재 수량 입력 중(인라인 입력창 존재)이면 메인 스캔창으로 포커스를 뺏지 않음
+  if (document.getElementById("inline-qty")) return;
+
+  // 그 외에는 스캔 입력창에 포커스 유지
+  setTimeout(() => els.scanInput.focus(), 100);
 }
 
 // 이벤트 리스너
-// 메인 입력창 엔터 처리
 els.scanInput.addEventListener("keypress", (e) => {
-  if(e.key === "Enter") handleInput(els.scanInput.value);
+  if(e.key === "Enter") handleInput();
 });
 
-// 수량 입력창 엔터 처리
-els.qtyInput.addEventListener("keypress", (e) => { if(e.key === "Enter") confirmQty(); });
-// 작업자 입력창 엔터 처리
 els.workerInput.addEventListener("keypress", (e) => { if(e.key === "Enter") confirmWorker(); });
 
 els.refreshBtn.addEventListener("click", () => { if(confirm("새로고침?")) loadData(); });
 
-// 화면 아무데나 터치해도 입력창에 포커스 가도록 (PDA 사용성 향상)
+// 화면 클릭 시 포커스 제어
 document.addEventListener("click", (e) => {
-  // 팝업이나 버튼이 아닐 때만
+  // 버튼이나 입력창을 누른 게 아니고, 로그인 모달이 닫혀있다면 스캔창 포커스
   if(!e.target.closest("button") && !e.target.closest("input")) {
-    if(els.loginModal.style.display === "none" && els.qtyModal.style.display === "none") {
-      els.scanInput.focus();
+    if(els.loginModal.style.display === "none") {
+      keepFocus();
     }
   }
 });
