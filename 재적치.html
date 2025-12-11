@@ -34,7 +34,7 @@
   .step.active { background: var(--kurly-purple); color: white; }
   .step.active-2 { background: var(--kurly-orange); color: white; }
 
-  /* 중앙 컨텐츠 영역 (유동적) */
+  /* 중앙 컨텐츠 영역 */
   #main-container {
     flex-grow: 1;
     display: flex;
@@ -42,6 +42,8 @@
     padding: 10px;
     overflow: hidden;
     position: relative;
+    /* 기본은 상단 정렬 */
+    justify-content: flex-start; 
   }
 
   /* 입력창 영역 (항상 하단) */
@@ -68,9 +70,9 @@
   .label { font-size: 13px; color: #888; }
   .val { font-size: 18px; font-weight: 700; color: #333; word-break: break-all; }
 
-  /* 2단계 전용 타겟 박스 */
+  /* 2단계 전용 타겟 박스 (초기엔 숨김) */
   #target-area {
-    display: none; /* 1단계에선 숨김 */
+    display: none; 
     flex-grow: 1;
     background: #fff4e6;
     border: 2px solid var(--kurly-orange);
@@ -80,10 +82,10 @@
     align-items: center;
     text-align: center;
   }
-  .target-val { font-size: 24vw; font-weight: 900; color: var(--kurly-orange); line-height: 1; margin-top: 10px; }
+  .target-val { font-size: 18vw; font-weight: 900; color: var(--kurly-orange); line-height: 1; margin-top: 5px; }
 
   /* =========================================
-     [모드별 스타일 변경 - 핵심] 
+     [모드별 스타일 변경 - 핵심 로직] 
      ========================================= */
      
   /* 1단계 (상품 스캔) */
@@ -91,32 +93,43 @@
   body.mode-step1 #target-area { display: none; }
   body.mode-step1 #scan-input { border-color: var(--kurly-purple); }
 
-  /* 2단계 (지번 스캔) - 모든 방해 요소 제거 */
-  body.mode-step2 .header { display: none !important; }        /* 헤더 숨김 */
-  body.mode-step2 #worker-display { display: none !important; } /* 이름 숨김 */
-  body.mode-step2 #step-bar { display: none !important; }       /* 단계바 숨김 */
-  body.mode-step2 #guide-msg { display: none !important; }      /* 가이드 숨김 */
+  /* 2단계 (지번 스캔) - 하단 집중형 레이아웃 */
+  body.mode-step2 .header { display: none !important; }         
+  body.mode-step2 #worker-display { display: none !important; } 
+  body.mode-step2 #step-bar { display: none !important; }       
+  body.mode-step2 #guide-msg { display: none !important; }      
   
-  body.mode-step2 #main-container { padding: 0; }               /* 여백 제거 */
-  body.mode-step2 #info-card { 
-    border-radius: 0; box-shadow: none; padding: 5px; 
-    background: #fff4e6; /* 전체 배경 주황 */
+  /* 2단계 컨테이너: 내용을 아래로(Bottom) 밀어버림 */
+  body.mode-step2 #main-container { 
+    padding: 0; 
+    justify-content: flex-end; /* 핵심: 아래 정렬 */
+    background: #fff4e6; /* 전체 배경을 주황톤으로 */
   }
   
-  body.mode-step2 .row { display: none; } /* 기존 상품 정보 숨김 (아래 작은 텍스트로 대체) */
+  body.mode-step2 #info-card { 
+    border-radius: 0; box-shadow: none; padding: 0 10px; 
+    background: transparent; 
+    height: auto; /* 높이 자동 조절 */
+    justify-content: flex-end; /* 내부 요소도 아래로 */
+    margin-bottom: 5px; /* 입력창과 아주 가깝게 */
+  }
   
-  /* 2단계에서만 보이는 상품명 (작게 상단 고정) */
-  #mini-p-info { display: none; font-size: 14px; text-align: center; color: #666; margin-bottom: 5px; }
+  body.mode-step2 .row { display: none; } 
+  
+  /* 2단계에서만 보이는 상품명 (상단에 작게 표시) */
+  #mini-p-info { display: none; font-size: 15px; text-align: center; color: #555; margin-bottom: 20px; font-weight: 500;}
   body.mode-step2 #mini-p-info { display: block; }
 
   body.mode-step2 #target-area { 
     display: flex; 
-    border: none; /* 테두리 제거 */
+    border: none; 
     background: transparent;
+    justify-content: flex-end; /* 텍스트를 아래로 */
+    padding-bottom: 0;
   }
   
-  body.mode-step2 #input-wrapper { background: #fff4e6; border-top: none; padding-bottom: 5px; } /* 하단부 배경 일치 */
-  body.mode-step2 #scan-input { border-color: var(--kurly-orange); background: white; }
+  body.mode-step2 #input-wrapper { background: #fff4e6; border-top: none; padding-bottom: 15px; } 
+  body.mode-step2 #scan-input { border-color: var(--kurly-orange); background: white; box-shadow: 0 -2px 10px rgba(255, 107, 0, 0.1); }
 
   /* 모달 스타일 */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: center; }
@@ -179,7 +192,7 @@
     <div id="mini-p-info"></div>
 
     <div id="target-area">
-      <div style="font-size:16px; color:#d9480f; font-weight:bold;">⬇️ 이 지번에 적치</div>
+      <div style="font-size:14px; color:#d9480f; font-weight:bold; margin-bottom: 5px;">⬇️ 여기로 이동하세요</div>
       <div class="target-val" id="p-jibun">-</div>
     </div>
   </div>
@@ -277,7 +290,7 @@ function confirmQty() {
 
 function moveToStep2() {
   els.pName.innerText = `${currentProduct.name} (${currentProduct.qty}개)`;
-  // 2단계에서 작게 보일 텍스트 설정
+  // 2단계 미니 정보 (상품명은 위에 작게)
   els.miniInfo.innerText = `${currentProduct.name} (${currentProduct.qty}개)`;
   els.pJibun.innerText = currentProduct.jibun;
   setStep(2); 
