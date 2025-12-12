@@ -9,7 +9,7 @@
 <style>
   :root { --kurly-purple: #5f0080; --kurly-orange: #ff6b00; --bg-gray: #f4f4f4; --text-black: #333; }
   * { box-sizing: border-box; }
-   
+    
   body { 
     height: 100vh; margin: 0; padding: 0; 
     overflow: hidden; 
@@ -17,10 +17,10 @@
     background-color: var(--bg-gray); 
     display: flex; flex-direction: column; 
   }
-   
-  /* 헤더 스타일 */
+    
+  /* 헤더 스타일 (항상 상단 고정) */
   .header { 
-    padding: 10px 15px; 
+    padding: 0 10px; 
     width: 100%; 
     display: flex; 
     justify-content: space-between; 
@@ -28,27 +28,26 @@
     background-color: white; 
     border-bottom: 1px solid #ddd; 
     flex-shrink: 0; 
-    min-height: 60px; 
-    height: auto;
+    height: 50px; /* 높이 고정 */
+    z-index: 1000;
   }
+  
+  .header-btn {
+    font-size: 14px;
+    font-weight: bold;
+    color: #555;
+    padding: 8px 12px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    display: flex; align-items: center; gap: 5px;
+  }
+
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
-  .status-btn { 
-    font-size: 13px; 
-    background: white; 
-    padding: 6px 12px; 
-    border-radius: 20px; 
-    color: #555; 
-    font-weight: bold; 
-    border: 1px solid #ddd; 
-    cursor: pointer; 
-    white-space: nowrap; 
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-   
+
   #worker-display { width: 100%; text-align: right; font-size: 12px; color: #666; padding: 5px 10px; background: #f9f9f9; flex-shrink: 0; }
-   
+    
   #step-bar { display: flex; width: 100%; background: #ddd; height: 40px; flex-shrink: 0; }
   .step { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: #999; }
   .step.active { background: var(--kurly-purple); color: white; }
@@ -59,7 +58,7 @@
     display: flex;
     flex-direction: column;
     padding: 10px;
-    overflow: hidden;
+    overflow-y: auto; /* 내용이 길면 스크롤 */
     position: relative;
     justify-content: flex-start; 
   }
@@ -76,10 +75,9 @@
   #scan-input { 
     width: 100%; padding: 15px; font-size: 18px; border: 2px solid var(--kurly-purple); 
     border-radius: 8px; outline: none; text-align: center; font-weight: bold;
-    /* 중요: IME(한글입력기) 비활성화 시도 (PC/일부 안드로이드용) */
     ime-mode: disabled; 
   }
-   
+    
   #info-card {
     background: white; border-radius: 10px; padding: 15px; 
     box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
@@ -120,7 +118,7 @@
      [1단계: 상품 스캔 모드] 
      ========================================= */
   body.mode-step1 #info-card { display: none !important; }
-  
+   
   body.mode-step1 #guide-msg { 
     display: block; 
     text-align: center; 
@@ -130,7 +128,6 @@
     margin-bottom: 15px; 
   }
 
-  /* 키보드 가림 방지를 위해 상단 배치 (Flex Flow 사용) */
   body.mode-step1 #main-container {
     justify-content: flex-start; 
     padding-top: 10vh; 
@@ -146,7 +143,7 @@
     margin: 0 auto; 
     padding: 0;
   }
-  
+   
   body.mode-step1 #scan-input {
     box-shadow: 0 4px 15px rgba(95, 0, 128, 0.2);
   }
@@ -155,29 +152,28 @@
 
 
   /* [모드 2: 지번 스캔] */
-  body.mode-step2 .header { display: none !important; }          
+  /* 헤더는 이제 숨기지 않음 */
   body.mode-step2 #worker-display { display: none !important; } 
   body.mode-step2 #step-bar { display: none !important; }        
-  body.mode-step2 #guide-msg { display: none !important; }       
-   
+  body.mode-step2 #guide-msg { display: none !important; }        
+    
   body.mode-step2 #main-container { 
-    padding: 0; 
+    padding: 5px; /* 헤더 공간 확보를 위해 패딩 유지 */
     justify-content: flex-end; 
     background: #fff4e6; 
-    padding-top: 0; 
   }
-   
+    
   body.mode-step2 #info-card { 
-    border-radius: 0; box-shadow: none; padding: 0 10px; 
+    border-radius: 0; box-shadow: none; padding: 0 5px; 
     background: transparent; 
     height: auto; 
     justify-content: flex-end; 
     margin-bottom: 5px; 
   }
-   
+    
   body.mode-step2 .row { display: none; } 
-   
-  #mini-p-info { display: none; font-size: 15px; text-align: center; color: #555; margin-bottom: 20px; font-weight: 500;}
+    
+  #mini-p-info { display: none; font-size: 15px; text-align: center; color: #555; margin-bottom: 10px; font-weight: 500;}
   body.mode-step2 #mini-p-info { display: block; }
 
   body.mode-step2 #target-area { 
@@ -187,8 +183,8 @@
     justify-content: flex-end; 
     padding-bottom: 0;
   }
-   
-  body.mode-step2 #input-wrapper { background: #fff4e6; border-top: none; padding-bottom: 15px; position: relative; top: 0; left: 0; transform: none; width: 100%; margin: 0;} 
+    
+  body.mode-step2 #input-wrapper { background: #fff4e6; border-top: none; padding-bottom: 10px; position: relative; width: 100%; margin: 0;} 
   body.mode-step2 #scan-input { border-color: var(--kurly-orange); background: white; box-shadow: 0 -2px 10px rgba(255, 107, 0, 0.1); }
 
   /* 모달 & 기타 */
@@ -196,28 +192,53 @@
   .modal-box { background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 12px; text-align: center; }
   .modal-input { width: 100%; padding: 10px; font-size: 20px; text-align: center; border: 2px solid var(--kurly-purple); border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
   .modal-btn { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; background: var(--kurly-purple); color: white; border: none; border-radius: 8px; cursor: pointer; }
-   
+    
   #msg-overlay { z-index: 2001; color: white; pointer-events: none; }
   #msg-icon { font-size: 60px; margin-bottom: 20px; }
   #msg-text { font-size: 24px; font-weight: bold; }
   #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 999; display: none; justify-content: center; align-items: center; flex-direction: column; }
 
-  /* 시작 화면 (터치 유도) */
+  /* 시작 화면 (송장 선택) */
   #start-screen {
     position: fixed; inset: 0; background: var(--kurly-purple); 
     z-index: 3000; display: flex; flex-direction: column; 
     justify-content: center; align-items: center; color: white;
-    cursor: pointer;
   }
-  .pulse-text { animation: pulse 1.5s infinite; font-size: 20px; font-weight: bold; margin-top: 20px;}
-  @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+  .start-content {
+    width: 90%; max-width: 400px; text-align: center;
+  }
+  .select-btn {
+    width: 100%;
+    padding: 25px;
+    margin: 10px 0;
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--kurly-purple);
+    background: white;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .select-btn:active { transform: translateY(4px); box-shadow: none; }
+  .select-btn.no-inv { background: #eee; color: #555; }
 </style>
 </head>
 <body class="mode-step1">
 
-<div id="start-screen" onclick="startApp()">
-  <div class="logo" style="color:white; font-size:30px; margin-bottom:10px;">Kurly Work</div>
-  <div class="pulse-text">👆 화면을 터치하여 시작</div>
+<div id="start-screen">
+  <div class="start-content">
+    <div style="font-size:32px; font-weight:900; margin-bottom:40px;">Kurly Work</div>
+    <div style="font-size:16px; margin-bottom:10px; opacity:0.8;">작업 모드를 선택하세요</div>
+    
+    <button class="select-btn" onclick="selectMode(true)">
+      📦 송장 O (있음)
+    </button>
+    <button class="select-btn no-inv" onclick="selectMode(false)">
+      📄 송장 X (없음)
+    </button>
+  </div>
 </div>
 
 <div id="login-modal" class="modal-overlay">
@@ -244,8 +265,9 @@
 </div>
 
 <div class="header">
-  <div class="logo">재적치 (PDA)</div>
-  <div class="status-btn" id="refresh-btn">
+  <div class="header-btn" onclick="goHome()">🏠 홈</div>
+  <div class="logo">재적치 PDA</div>
+  <div class="header-btn" id="refresh-btn">
     <span id="db-status">0개</span>
     <span>🔄</span>
   </div>
@@ -264,7 +286,7 @@
       <div class="label">상품명</div>
       <div class="val" id="p-name">-</div>
     </div>
-    
+     
     <div id="mini-p-info"></div>
 
     <div id="target-area">
@@ -272,7 +294,7 @@
       <div class="target-val" id="p-jibun">-</div>
     </div>
   </div>
-  
+   
   <div id="input-wrapper">
     <div id="guide-msg">상품 바코드를 스캔하세요</div>
     <input type="text" id="scan-input" placeholder="스캔..." autocomplete="off" 
@@ -286,6 +308,7 @@ let skuMap = {};
 let currentStep = 1; 
 let currentProduct = null;
 let currentWorker = ""; 
+let hasInvoice = true; // 송장 유무 상태 저장
 
 const els = {
   body: document.body,
@@ -310,17 +333,32 @@ const els = {
   refreshBtn: document.getElementById("refresh-btn")
 };
 
-function startApp() {
+// [수정] 모드 선택 함수
+function selectMode(invoice) {
+  hasInvoice = invoice;
   els.startScreen.style.display = "none";
-  els.loginModal.style.display = "flex";
-  els.workerInput.focus();
+  
+  // 이미 로그인했으면 바로 시작, 아니면 로그인 창
+  if(currentWorker) {
+    loadData();
+  } else {
+    els.loginModal.style.display = "flex";
+    els.workerInput.focus();
+  }
+}
+
+// [추가] 홈 버튼 기능 (초기화)
+function goHome() {
+  if(confirm("초기 화면으로 돌아가시겠습니까?")) {
+    location.reload();
+  }
 }
 
 function confirmWorker() {
   const name = els.workerInput.value.trim();
   if(!name) { alert("이름 필수"); return; }
   currentWorker = name;
-  els.workerDisplay.innerText = "작업자: " + name; 
+  els.workerDisplay.innerText = "작업자: " + name + (hasInvoice ? " (송장O)" : " (송장X)"); 
   els.loginModal.style.display = "none"; 
   loadData();
 }
@@ -354,9 +392,7 @@ function handleProductScan(code) {
     openQtyModal(item[0]); 
   } else {
     showMessage("❌", "미등록", "red");
-    setTimeout(() => {
-        forceEnglishKeyboard(); // 재시도 시에도 영문 키보드 강제
-    }, 100);
+    setTimeout(() => { forceEnglishKeyboard(); }, 100);
   }
 }
 
@@ -378,10 +414,11 @@ function confirmQty() {
 function moveToStep2() {
   els.pName.innerText = `${currentProduct.name} (${currentProduct.qty}개)`;
   els.miniInfo.innerText = `${currentProduct.name} (${currentProduct.qty}개)`;
-  
+   
   const jibunText = currentProduct.jibun;
   els.pJibun.innerText = jibunText;
-  
+   
+  // 글자 수에 따라 폰트 사이즈 조절
   const len = jibunText.length;
   const calcSize = Math.min(20, 115 / Math.max(1, len));
   els.pJibun.style.fontSize = calcSize + "vw";
@@ -391,15 +428,14 @@ function moveToStep2() {
 
 function handleLocationScan(scannedJibun) {
   const targetJibun = currentProduct.jibun;
+  // 공백 제거 후 비교
   if(scannedJibun.replace(/\s/g, "") === targetJibun.replace(/\s/g, "")) {
     saveLog(scannedJibun);
     showMessage("✅", "완료!", "green");
     setTimeout(() => { resetToStep1(); }, 1500);
   } else {
     showMessage("⚠️", "불일치", "#ff6b00");
-    setTimeout(() => {
-        forceEnglishKeyboard(); // 불일치 후 재입력 시 영문 강제
-    }, 100);
+    setTimeout(() => { forceEnglishKeyboard(); }, 100);
   }
 }
 
@@ -407,20 +443,25 @@ function saveLog(scannedLoc) {
   fetch(GAS_URL, {
     method: "POST", mode: "no-cors",
     body: JSON.stringify({
-      workerName: currentWorker, prodCode: currentProduct.code, prodName: currentProduct.name,
-      targetJibun: currentProduct.jibun, scannedJibun: scannedLoc, qty: currentProduct.qty 
+      workerName: currentWorker, 
+      isInvoice: hasInvoice, // 송장 유무 데이터 추가
+      prodCode: currentProduct.code, 
+      prodName: currentProduct.name,
+      targetJibun: currentProduct.jibun, 
+      scannedJibun: scannedLoc, 
+      qty: currentProduct.qty 
     })
   });
 }
 
-// [핵심 기능] 영문 키보드 강제 함수 (Password Trick)
+// 키보드 강제 영문 (트릭)
 function forceEnglishKeyboard() {
-  // 1. 잠시 비밀번호 필드로 변경 (비밀번호는 OS 레벨에서 영문 자판 강제)
   els.scanInput.type = "password"; 
   els.scanInput.focus();
-  els.scanInput.scrollIntoView({ behavior: "smooth", block: "center" });
-
-  // 2. 아주 짧은 시간 뒤 텍스트 필드로 복구 (사용자가 보기에 깜빡임 거의 없음)
+  
+  // 화면 중앙으로 스크롤 방지 (헤더가 fixed라 가려질 수 있음 방지)
+  // els.scanInput.scrollIntoView({ behavior: "smooth", block: "center" });
+  
   setTimeout(() => {
     els.scanInput.type = "text";
   }, 50);
@@ -439,8 +480,7 @@ function setStep(step) {
     els.step1.classList.remove("active"); els.step2.classList.add("active-2");
     els.scanInput.placeholder = "지번 바코드 스캔";
   }
-  
-  // 단계 변경 시 영문 키보드 강제 실행
+   
   setTimeout(() => {
     forceEnglishKeyboard();
   }, 200);
@@ -467,9 +507,9 @@ els.workerInput.addEventListener("keypress", (e) => { if(e.key === "Enter") conf
 els.refreshBtn.addEventListener("click", () => { if(confirm("DB 갱신?")) loadData(); });
 
 document.addEventListener("click", (e) => {
+  // 모달이 없을 때만 인풋 포커스 유지
   if(!e.target.closest("button") && !e.target.closest("input")) {
-    if(els.loginModal.style.display === "none" && els.qtyModal.style.display === "none") {
-      // 배경 클릭 시에도 영문 키보드 유지하며 포커스
+    if(els.loginModal.style.display === "none" && els.qtyModal.style.display === "none" && els.startScreen.style.display === "none") {
       forceEnglishKeyboard();
     }
   }
