@@ -12,30 +12,28 @@
    
   body { 
     height: 100vh; margin: 0; padding: 0; 
-    overflow: hidden; /* 전체 페이지 스크롤 방지 */
+    overflow: hidden; 
     font-family: 'Noto Sans KR', sans-serif; 
     background-color: var(--bg-gray); 
     display: flex; flex-direction: column; 
   }
    
-  /* ======================================================== */
-  /* [수정] 헤더 스타일 - 상단 고정 및 잘림 방지 */
-  /* ======================================================== */
+  /* 헤더 스타일 */
   .header { 
     width: 100%; 
-    height: 55px; /* 높이 약간 증가 */
+    height: 55px; 
     background: white; 
     border-bottom: 1px solid #ddd; 
     display: flex; 
     justify-content: space-between; 
     align-items: center; 
     padding: 0 15px; 
-    flex-shrink: 0; /* 절대 줄어들지 않음 */
+    flex-shrink: 0; 
     z-index: 1000;
     position: relative;
   }
   .logo { color: var(--kurly-purple); font-weight: 800; font-size: 18px; }
-  .home-icon { font-size: 26px; cursor: pointer; padding: 10px; } /* 터치 영역 확대 */
+  .home-icon { font-size: 26px; cursor: pointer; padding: 10px; } 
   .worker-badge { font-size: 13px; font-weight: bold; background: #eee; padding: 6px 12px; border-radius: 15px; color: #555; }
 
   /* 화면 분리 스타일 */
@@ -49,11 +47,7 @@
     inset: 0;
     z-index: 10;
   }
-   
-  .screen.active { 
-    display: flex !important; 
-    z-index: 20; 
-  }
+  .screen.active { display: flex !important; z-index: 20; }
 
   /* 로그인 모달 */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 5000; display: flex; justify-content: center; align-items: center; }
@@ -61,7 +55,7 @@
   .modal-input { width: 100%; padding: 15px; font-size: 20px; text-align: center; border: 2px solid var(--kurly-purple); border-radius: 8px; margin: 20px 0; font-weight: bold; outline: none; }
   .modal-btn { width: 100%; padding: 15px; font-size: 18px; font-weight: bold; background: var(--kurly-purple); color: white; border: none; border-radius: 8px; cursor: pointer; }
 
-  /* 1. 홈 화면 (송장 선택) */
+  /* 홈 화면 */
   #home-screen { justify-content: center; align-items: center; padding: 20px; gap: 20px; }
   
   .mode-btn { 
@@ -75,29 +69,38 @@
     position: relative; overflow: hidden;
   }
   .mode-btn:active { transform: scale(0.98); }
-  
-  /* 송장 있음 (주황색) */
   .btn-invoice { background: linear-gradient(135deg, #ff6b00, #ff8e3c); }
-  /* 송장 없음 (보라색) */
   .btn-scan { background: linear-gradient(135deg, #5f0080, #7e00ac); }
-  
   .btn-sub { font-size: 16px; font-weight: 500; margin-top: 8px; opacity: 0.9; }
   .btn-icon { font-size: 40px; margin-bottom: 5px; }
 
-  /* 2. 작업 화면 */
-  #work-screen { 
-    /* 중요: 전체 패딩 제거 (헤더 꽉 차게 하기 위함) */
-    padding: 0; 
-  }
-  
-  /* [수정] 작업 화면 내부 컨텐츠 래퍼 (헤더 아래 내용만 패딩 적용) */
-  .work-body {
-    flex: 1;
+  /* [추가] DB 갱신 버튼 영역 */
+  .db-area {
+    margin-top: 10px;
     display: flex;
     flex-direction: column;
-    padding: 10px;
-    overflow: hidden; /* 내부 스크롤 제어 */
+    align-items: center;
+    gap: 10px;
+    color: #666;
+    font-size: 14px;
   }
+  .btn-refresh {
+    background: white;
+    border: 1px solid #ccc;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  .btn-refresh:active { background: #eee; }
+
+  /* 작업 화면 */
+  #work-screen { padding: 0; }
+  .work-body { flex: 1; display: flex; flex-direction: column; padding: 10px; overflow: hidden; }
    
   #mode-indicator { text-align: center; padding: 10px; font-weight: bold; color: white; border-radius: 8px; margin-bottom: 10px; font-size: 16px; flex-shrink: 0; }
   .bg-Y { background: var(--kurly-orange); } 
@@ -112,34 +115,16 @@
   .zone-val { font-size: 65px; font-weight: 900; color: var(--kurly-purple); line-height: 1; margin: 5px 0; }
   .p-name-val { font-size: 18px; color: #333; font-weight: bold; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* 입력창 */
   #input-box { display: flex; gap: 5px; margin-bottom: 10px; flex-shrink: 0; }
-  #scan-input { 
-    flex: 1; padding: 15px; border: 3px solid #ddd; border-radius: 8px; 
-    font-size: 18px; outline: none; text-align: center; font-weight: bold; 
-    ime-mode: disabled; 
-  }
+  #scan-input { flex: 1; padding: 15px; border: 3px solid #ddd; border-radius: 8px; font-size: 18px; outline: none; text-align: center; font-weight: bold; ime-mode: disabled; }
   #scan-input:focus { border-color: var(--kurly-purple); }
    
-  /* 리스트 영역 */
-  #list-area { 
-    flex-grow: 1; 
-    background: white; 
-    border-radius: 8px; 
-    overflow-y: auto; 
-    border: 1px solid #ddd; 
-    display: flex; 
-    flex-direction: column; 
-    -webkit-overflow-scrolling: touch; /* 모바일 부드러운 스크롤 */
-  }
-   
+  #list-area { flex-grow: 1; background: white; border-radius: 8px; overflow-y: auto; border: 1px solid #ddd; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; }
   .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-bottom: 1px solid #eee; }
   .list-item.latest { background-color: #fff0f5; }
-   
   .item-info { flex: 1; overflow: hidden; }
   .item-row1 { font-size: 15px; font-weight: bold; color: #333; margin-bottom: 2px; }
   .item-row2 { font-size: 13px; color: #888; display: flex; gap: 10px; }
-   
   .btn-del { width: 40px; height: 40px; background: #eee; color: #888; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 18px; margin-left: 10px; cursor: pointer; flex-shrink: 0; }
   .btn-del:active { background: #ff4444; color: white; }
 
@@ -147,7 +132,6 @@
   .action-btn { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 20px; font-weight: 900; color: white; cursor: pointer; background: #333; }
   .action-btn:active { opacity: 0.9; }
 
-  /* 로딩 */
   #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 6000; display: none; justify-content: center; align-items: center; flex-direction: column; }
   .spinner { width: 40px; height: 40px; border: 5px solid #ddd; border-top-color: var(--kurly-purple); border-radius: 50%; animation: spin 1s infinite linear; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -185,7 +169,12 @@
     <span class="btn-sub">목록 스캔 후 전송</span>
   </button>
   
-  <div style="margin-top:20px; color:#999; font-size:13px;">DB 데이터: <span id="db-count">0</span>개</div>
+  <div class="db-area">
+    <div>DB 데이터: <span id="db-count">0</span>개</div>
+    <button class="btn-refresh" onclick="loadData()">
+      🔄 DB 최신화 (갱신)
+    </button>
+  </div>
 </div>
 
 <div id="work-screen" class="screen">
@@ -244,17 +233,33 @@ const els = {
   bigDisplay: document.getElementById("big-zone-display")
 };
 
-window.onload = async () => {
-  els.workerInput.focus(); 
-  els.loadingTxt.innerText = "DB 로드 중...";
+// [수정] 데이터 로드 함수 분리 (버튼으로도 호출 가능하게)
+async function loadData() {
+  els.loadingTxt.innerText = "DB 최신화 중...";
+  els.loading.style.display = 'flex';
   try {
+    // 캐시 방지를 위해 timestamp 추가
     const res = await fetch(GAS_URL + "?t=" + Date.now());
     const data = await res.json();
     skuMap = data;
-    els.dbCount.innerText = Object.keys(data).length;
+    const count = Object.keys(data).length;
+    els.dbCount.innerText = count;
+    
+    // 만약 버튼으로 눌렀을 때는 알림 표시
+    if(count > 0 && els.loading.style.display === 'flex') {
+       // 너무 빨리 닫히면 갱신된건지 모르니까 살짝 지연
+       setTimeout(() => { els.loading.style.display = 'none'; }, 300);
+    }
   } catch(e) {
     alert("DB 로드 실패");
+    els.loading.style.display = 'none';
   }
+}
+
+// 시작 시 자동 로드
+window.onload = () => {
+  els.workerInput.focus(); 
+  loadData();
 };
 
 function confirmWorker() {
@@ -265,7 +270,6 @@ function confirmWorker() {
   els.headerWorker.innerText = name;
   
   els.loginModal.style.display = "none";
-  // 홈 화면 보이기
   els.homeScreen.classList.add("active");
   els.workScreen.classList.remove("active");
 }
@@ -277,7 +281,6 @@ function startMode(mode) {
   els.dispName.innerText = "바코드를 스캔하세요";
   els.listArea.innerHTML = '<div style="text-align:center; color:#999; padding:30px;">목록이 비었습니다.</div>';
   
-  // 화면 교체
   els.homeScreen.classList.remove("active");
   els.workScreen.classList.add("active");
   
@@ -299,7 +302,6 @@ function goHome() {
   if (scanList.length > 0) {
     if (!confirm("작업 중인 목록이 있습니다.\n저장하지 않고 나가시겠습니까?")) return;
   }
-  // 화면 교체 (작업 숨김, 홈 보임)
   els.workScreen.classList.remove("active");
   els.homeScreen.classList.add("active");
 }
@@ -401,7 +403,6 @@ async function finishWork() {
 }
 
 function forceFocus() {
-  // 홈 화면일 때는 포커스 금지
   if (!els.workScreen.classList.contains("active")) return;
   els.scanInput.type = "password";
   els.scanInput.focus();
@@ -416,7 +417,6 @@ els.workerInput.addEventListener("keypress", (e) => {
 });
 
 document.addEventListener("click", (e) => {
-  // 작업 화면이고, 버튼/인풋이 아닐 때만 포커스 강제
   if (els.workScreen.classList.contains("active") && 
       !e.target.closest("button") && 
       !e.target.closest("input") && 
